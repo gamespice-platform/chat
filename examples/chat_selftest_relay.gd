@@ -237,7 +237,7 @@ func _test_relay_in_commands(
 	# A command from somebody without the flag.
 	backbone.outbound = [{
 		"id": "11", "author": "Cy", "authorId": "cy1",
-		"body": "/arena_map dm_box", "muted": false,
+		"body": "/fc_map dm_box", "muted": false,
 	}]
 	backbone.newest = "11"
 	relay._poll()
@@ -249,7 +249,7 @@ func _test_relay_in_commands(
 	# And from somebody with it.
 	backbone.outbound = [{
 		"id": "12", "author": "Boss", "authorId": "boss",
-		"body": "/arena_map dm_atrium", "muted": false,
+		"body": "/fc_map dm_atrium", "muted": false,
 	}]
 	backbone.newest = "12"
 	relay._poll()
@@ -257,7 +257,7 @@ func _test_relay_in_commands(
 
 	_check(ran.size() == 1, "and runs when the server says yes")
 	if ran.size() > 0:
-		_check(str(ran[0]["command"]) == "arena_map", "with the command")
+		_check(str(ran[0]["command"]) == "fc_map", "with the command")
 		_check(Array(ran[0]["args"]) == ["dm_atrium"], "and its arguments")
 		_check(str(ran[0]["uid"]) == "backbone:boss", "as the site author's uid")
 		# 3 is CHAT — the conservative default, which several games deliberately
@@ -270,7 +270,7 @@ func _test_relay_in_commands(
 	var before_ran := ran.size()
 	backbone.outbound = [{
 		"id": "13", "author": "Boss", "authorId": "boss",
-		"body": "/arena_map dm_box", "muted": false,
+		"body": "/fc_map dm_box", "muted": false,
 	}]
 	backbone.newest = "13"
 	relay._poll()
