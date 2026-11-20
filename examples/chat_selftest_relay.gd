@@ -1,6 +1,6 @@
 extends Node
 
-## The website-relay sections of the dot-chat self-test, run by chat_selftest.gd.
+## The website-relay sections of the GameSpice Chat self-test, run by chat_selftest.gd.
 
 const Fakes := preload("res://examples/chat_selftest_fakes.gd")
 const FakeWorld := Fakes.FakeWorld

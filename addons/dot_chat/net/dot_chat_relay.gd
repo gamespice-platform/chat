@@ -13,16 +13,16 @@ extends Node
 ## [codeblock]
 ## var relay := DotChatRelay.new()
 ## relay.router = chat_router
-## relay.client = backbone_client          # dot-auth's DotBackboneClient, duck-typed
+## relay.client = backbone_client          # GameSpice Auth's DotBackboneClient, duck-typed
 ## relay.config = my_relay_config
 ## relay.command_fn = _run_console_command
 ## relay.permission_fn = admins.uid_has_permission
 ## add_child(relay)
 ## [/codeblock]
 ##
-## [b]The backbone client is held as an [Object] and never named.[/b] dot-chat depends on
-## dot-core and nothing else — a script that so much as MENTIONS [code]DotBackboneClient[/code]
-## fails to compile in a project without dot-auth installed, which is most of them. Same
+## [b]The backbone client is held as an [Object] and never named.[/b] GameSpice Chat depends on
+## GameSpice Core and nothing else — a script that so much as MENTIONS [code]DotBackboneClient[/code]
+## fails to compile in a project without GameSpice Auth installed, which is most of them. Same
 ## reasoning, and the same shape, as [code]DotStatsReporter[/code]. The contract is two
 ## methods:
 ##
@@ -85,8 +85,8 @@ var uid_for_author: Callable = Callable()
 ## `(uid: String, command: String, args: PackedStringArray, source: int)` — the source is
 ## [member DotChatRelayConfig.command_source], passed through rather than decided here.
 ##
-## [b]A callable rather than a reference to a console.[/b] dot-chat does not depend on
-## dot-server and must not: the games that use one use both, and the two that do not are
+## [b]A callable rather than a reference to a console.[/b] GameSpice Chat does not depend on
+## GameSpice Server and must not: the games that use one use both, and the two that do not are
 ## the reason this is a seam.
 var command_fn: Callable = Callable()
 

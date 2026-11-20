@@ -46,7 +46,7 @@ enum Scope {
 ## cannot type one.
 @export var prefix: String = ""
 
-## A hint for the client's formatter. dot-chat draws nothing itself.
+## A hint for the client's formatter. GameSpice Chat draws nothing itself.
 @export var colour: Color = Color(1, 1, 1)
 
 @export_group("Audience")
@@ -164,7 +164,7 @@ func validate() -> DotResult:
 		return DotResult.fail(DotError.CODE_INVALID, "A channel needs an id.")
 
 	# Not is_valid_identifier(): that answers "may this be a variable name", and one
-	# may not begin with a digit — which is how dot-timer's records sanitiser turned
+	# may not begin with a digit — which is how GameSpice Timer's records sanitiser turned
 	# every digit in a map id into an underscore and merged two maps' leaderboards
 	# into one file.
 	for i in String(id).length():

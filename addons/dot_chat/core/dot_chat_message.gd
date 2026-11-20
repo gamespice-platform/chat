@@ -39,7 +39,7 @@ enum Kind {
 
 ## Serialised names for [enum Kind], indexed by the enum value.
 ##
-## [b]The names on the wire are these and only these.[/b] dot-moderation shipped a
+## [b]The names on the wire are these and only these.[/b] GameSpice Moderation shipped a
 ## store that wrote a punishment's [i]player-facing[/i] name — "voice muted", with a
 ## space — and read it back through a parser that had no case for it, so every stored
 ## voice mute loaded as a warning and enforced nothing. Two ends of one serialisation
@@ -66,7 +66,7 @@ var channel: StringName = &""
 
 var kind: Kind = Kind.SAY
 
-## The durable, pseudonymous key of whoever said it — a dot-user scope id, a guest
+## The durable, pseudonymous key of whoever said it — a GameSpice User scope id, a guest
 ## id, whatever the host's [code]key_fn[/code] returns. Empty for a server line.
 ##
 ## [b]Not an account id.[/b] Chat is broadcast to everybody in the server, so a key
@@ -173,7 +173,7 @@ func to_dictionary() -> Dictionary:
 static func from_dictionary(data: Dictionary) -> DotResult:
 	# [b]A dictionary that is not this wire form must be REFUSED, not read as an empty
 	# message.[/b] Every key here has a default, so without this check any dictionary at
-	# all parses: dot-server's chat manager sends `{kind, userid, name, text, admin}` and
+	# all parses: GameSpice Server's chat manager sends `{kind, userid, name, text, admin}` and
 	# it came back as a well-formed message whose text, sender and channel were all empty.
 	# Two games drew every line a player typed as ": " and the receiving code looked
 	# correct, because it WAS correct — it was being handed a message that had parsed.

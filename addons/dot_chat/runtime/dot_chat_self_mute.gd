@@ -25,19 +25,19 @@ extends RefCounted
 ## file it is kept in ([member path]) is named for the list, not for any game: inside the
 ## shell every game shares the shell's `user://`.
 ##
-## [b]Keyed by the server's `key` for a player, with the name as the fallback.[/b] dot-chat
+## [b]Keyed by the server's `key` for a player, with the name as the fallback.[/b] GameSpice Chat
 ## attributes a line to the session's userid (`sender_key`), which a reconnect changes, so a
-## mute keyed by it ends when the muted player presses reconnect. dot-server's scoreboard
-## rows carry `key` (a digest of the account, salted per server: see dot-server's
+## mute keyed by it ends when the muted player presses reconnect. GameSpice Server's scoreboard
+## rows carry `key` (a digest of the account, salted per server: see GameSpice Server's
 ## `player_key`) and `peer`, and this asks for that roster every [member refresh_sec]
 ## without the player holding Tab. A row without a key (a server before it, a client with
 ## no server) is matched by name, and an entry made by name is upgraded to the key the
 ## first time a roster shows that name with one.
 ##
-## [b]Nothing here names dot-server, dot-ui or dot-voice.[/b] The link is the registry's
+## [b]Nothing here names GameSpice Server, GameSpice UI or GameSpice Voice.[/b] The link is the registry's
 ## `dot_client_link`, read for `scoreboard_received` and `request_scoreboard()`; the voice
 ## manager is the registry's `dot_voice_client` (bound as it is published), or anything
-## handed to [method attach_voice] with `set_local_mute(peer, muted)`. dot-chat keeps its one
+## handed to [method attach_voice] with `set_local_mute(peer, muted)`. GameSpice Chat keeps its one
 ## dependency.
 
 const CHANNEL := "chat.self_mute"
@@ -50,7 +50,7 @@ const SCRIPT_PATH := "res://addons/dot_chat/runtime/dot_chat_self_mute.gd"
 
 const LINK_SERVICE := &"dot_client_link"
 
-## Where a game's own player's voice manager is published (dot-voice's
+## Where a game's own player's voice manager is published (GameSpice Voice's
 ## `DotVoiceManager.CLIENT_SERVICE`, by `publish_as_client()`). Bound by name, so neither
 ## addon loads the other: whichever is built first, the list finds the manager.
 const VOICE_SERVICE := &"dot_voice_client"
@@ -223,7 +223,7 @@ func _on_board(snapshot: Dictionary) -> void:
 	set_roster(rows if rows is Array else [], int(snapshot.get("you", 0)))
 
 
-## Takes a roster: dot-server's scoreboard rows, or a game's own with the same keys.
+## Takes a roster: GameSpice Server's scoreboard rows, or a game's own with the same keys.
 func set_roster(rows: Array, your_id: int = 0) -> void:
 	roster.clear()
 	you = your_id
@@ -263,7 +263,7 @@ func set_roster(rows: Array, your_id: int = 0) -> void:
 # --- Asking ----------------------------------------------------------------------
 
 ## Whether a line said by [param name] should be dropped. [param sender] is the line's
-## sender key (dot-chat's `s`, the userid) when it has one: the roster row it names
+## sender key (GameSpice Chat's `s`, the userid) when it has one: the roster row it names
 ## decides, and without one the row with that name does.
 func is_muted(name: String, sender: String = "") -> bool:
 	if entries.is_empty():
@@ -275,7 +275,7 @@ func is_muted(name: String, sender: String = "") -> bool:
 	return _row_muted(row)
 
 
-## [method is_muted] for a dot-chat wire line: `{d: name, s: sender, m: text}`.
+## [method is_muted] for a GameSpice Chat wire line: `{d: name, s: sender, m: text}`.
 func is_muted_line(wire: Dictionary) -> bool:
 	return is_muted(str(wire.get("d", "")), str(wire.get("s", "")))
 
@@ -285,7 +285,7 @@ func _row_for(sender: String, name: String) -> Dictionary:
 		var id := int(sender)
 		for row in roster:
 			# The name must agree too: a game whose sender key is its own player number
-			# rather than dot-server's userid would otherwise land on somebody else's row.
+			# rather than GameSpice Server's userid would otherwise land on somebody else's row.
 			if row["id"] == id and (name == "" or row["name"] == name):
 				return row
 	if name == "":

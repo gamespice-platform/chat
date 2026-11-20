@@ -1,10 +1,10 @@
 [![Chat - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/34-gs-chat)
 
-Text chat for Godot 4.7+ multiplayer games, decided by the server. It gives you channels with an audience rule, cleaning of markup and invisible characters, rate and repeat limits, command prefixes, scrollback, and a backlog for players who join later. Part of the [dot-*](https://github.com/gamespice-platform) family. It needs only [dot-core](https://github.com/gamespice-platform/core).
+Text chat for Godot 4.7+ multiplayer games, decided by the server. It gives you channels with an audience rule, cleaning of markup and invisible characters, rate and repeat limits, command prefixes, scrollback, and a backlog for players who join later. Part of the [GameSpice](https://github.com/gamespice-platform) family. It needs only [GameSpice Core](https://github.com/gamespice-platform/core).
 
 The server decides who hears a line, what it may contain, and what name is drawn beside it. Chat is the one place where a player puts arbitrary text in front of everyone else, so four things are handled on the server and your game gets a line to draw:
 
-| Risk | What dot-chat does |
+| Risk | What GameSpice Chat does |
 | --- | --- |
 | Markup (colours, sizes, images, links in a `RichTextLabel`). | Escapes it. |
 | Invisible text (zero-width characters, direction overrides). | Removes it. |
@@ -16,7 +16,7 @@ The server decides who hears a line, what it may contain, and what name is drawn
 1. Copy `addons/dot_chat/` and `addons/dot_core/` into your project.
 2. Enable dot-chat in *Project > Project Settings > Plugins*.
 
-[dot-moderation](https://github.com/gamespice-platform/moderation) is optional. When it is present, its gags apply with no wiring: the router asks whatever is registered as `dot_mute_source`, and neither addon names the other.
+[GameSpice Moderation](https://github.com/gamespice-platform/moderation) is optional. When it is present, its gags apply with no wiring: the router asks whatever is registered as `dot_mute_source`, and neither addon names the other.
 
 ## Quick start
 
@@ -115,11 +115,11 @@ router.command_entered.connect(func(peer, command, args, raw):
         vote.rock_the_vote(peer))
 ```
 
-This is how [dot-server](https://github.com/gamespice-platform/server)'s chat commands and dot-vote's `!rtv` reach a player without either addon knowing this one exists.
+This is how [GameSpice Server](https://github.com/gamespice-platform/server)'s chat commands and GameSpice Vote's `!rtv` reach a player without either addon knowing this one exists.
 
 ## Drawing it
 
-dot-chat ships no art. [dot-ui](https://github.com/gamespice-platform/ui)'s `DotChatWindow` is a ready window (a log, a line to type in, and a key that opens it). Point its `submitted` at `DotChatClient.compose` and feed what arrives back through `add_message`.
+GameSpice Chat ships no art. [GameSpice UI](https://github.com/gamespice-platform/ui)'s `DotChatWindow` is a ready window (a log, a line to type in, and a key that opens it). Point its `submitted` at `DotChatClient.compose` and feed what arrives back through `add_message`.
 
 ## Is the line reaching the site?
 

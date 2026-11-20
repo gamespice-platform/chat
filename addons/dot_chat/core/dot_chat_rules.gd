@@ -88,7 +88,7 @@ extends DotConfig
 
 ## Prefixes that make a message a command rather than something to broadcast.
 ##
-## Matches dot-server's [code]chat_command_prefixes[/code] default. A line starting
+## Matches GameSpice Server's [code]chat_command_prefixes[/code] default. A line starting
 ## with one of these is handed to the host instead of being sent to anybody, which is
 ## the only reason a mistyped [code]!ban[/code] does not appear in everybody's window.
 @export var command_prefixes: PackedStringArray = PackedStringArray(["!", "/"])
@@ -104,7 +104,7 @@ extends DotConfig
 ## Words replaced with [member censor_replacement], matched case-insensitively
 ## against a normalised form of the message.
 ##
-## [b]dot-chat ships an empty list and no opinion about what belongs in it.[/b] What
+## [b]GameSpice Chat ships an empty list and no opinion about what belongs in it.[/b] What
 ## a community censors is that community's decision, and a default list would be one
 ## imposed by whoever wrote the addon.
 @export var censor_words: PackedStringArray = PackedStringArray()

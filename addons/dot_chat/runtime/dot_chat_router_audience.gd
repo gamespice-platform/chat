@@ -40,7 +40,7 @@ var group_fn: Callable = Callable()
 var is_admin_fn: Callable = Callable()
 
 ## [code]func(peer: int) -> bool[/code]. Consulted only when no gag source is
-## registered, so a project without dot-moderation can still gag somebody.
+## registered, so a project without GameSpice Moderation can still gag somebody.
 var gag_fn: Callable = Callable()
 
 func _peers() -> PackedInt32Array:

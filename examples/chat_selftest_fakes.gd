@@ -1,8 +1,8 @@
 extends Node
 
-## Shared stand-ins for the dot-chat self-test: no transport, no other addon.
+## Shared stand-ins for the GameSpice Chat self-test: no transport, no other addon.
 
-## A stand-in for dot-moderation's manager, which this addon never names.
+## A stand-in for GameSpice Moderation's manager, which this addon never names.
 ##
 ## It answers one duck-typed method, which is the whole integration.
 class FakeMuteSource extends Node:
@@ -13,7 +13,7 @@ class FakeMuteSource extends Node:
 
 
 ## A backbone that records what it was sent and answers what it was told to.
-## Duck-typed: a script naming `DotBackboneClient` fails to compile without dot-auth.
+## Duck-typed: a script naming `DotBackboneClient` fails to compile without GameSpice Auth.
 class FakeBackbone extends RefCounted:
 	var posted: Array[Dictionary] = []
 	var outbound: Array[Dictionary] = []

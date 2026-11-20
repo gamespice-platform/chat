@@ -61,7 +61,7 @@ func _test_message_wire() -> void:
 	var bad := DotChatMessage.from_dictionary({"k": "nonsense", "m": "hi"})
 	_check(not bad.ok and bad.code() == DotError.CODE_PARSE, "a bad kind fails to parse")
 
-	# Every key has a default, so any dictionary parsed; dot-server's own payload then
+	# Every key has a default, so any dictionary parsed; GameSpice Server's own payload then
 	# filed an empty message and games drew every line as ": ". It must be refused.
 	var foreign := DotChatMessage.from_dictionary({
 		"kind": "all", "userid": 3, "name": "Alice", "text": "hello everyone",

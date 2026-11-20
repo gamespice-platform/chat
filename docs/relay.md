@@ -4,13 +4,13 @@
 
 ## The backbone client is an `Object` and is never named
 
-dot-chat depends on dot-core and nothing else; a script that so much as *mentions* `DotBackboneClient` fails to compile in a project without dot-auth, which is most of them. The contract is two methods, `post_integration` and `get_integration`, and that the suite substitutes a plain `RefCounted` for both is the proof the seam is real. Same shape as `DotStatsReporter`.
+GameSpice Chat depends on GameSpice Core and nothing else; a script that so much as *mentions* `DotBackboneClient` fails to compile in a project without GameSpice Auth, which is most of them. The contract is two methods, `post_integration` and `get_integration`, and that the suite substitutes a plain `RefCounted` for both is the proof the seam is real. Same shape as `DotStatsReporter`.
 
 ## Nothing here decides a permission
 
-A relayed command is resolved to a uid and handed to the host's `permission_fn`: dot-server's admin manager, the same file, the same flags, as that person typing it in game. A relay with its own permission model would be a second answer to "may this person do this" and the two would drift.
+A relayed command is resolved to a uid and handed to the host's `permission_fn`: GameSpice Server's admin manager, the same file, the same flags, as that person typing it in game. A relay with its own permission model would be a second answer to "may this person do this" and the two would drift.
 
-**The uid mapping is a seam, not a constant.** dot-auth namespaces every identity by its provider (`backbone:clx8f2k0`, `local:admin`, a third-party platform's own prefix), so which namespace an admin file is keyed by depends on who authenticated them. `author_uid_prefix` covers the prefix case and `uid_for_author` replaces the whole mapping for a server running its own auth back-end.
+**The uid mapping is a seam, not a constant.** GameSpice Auth namespaces every identity by its provider (`backbone:clx8f2k0`, `local:admin`, a third-party platform's own prefix), so which namespace an admin file is keyed by depends on who authenticated them. `author_uid_prefix` covers the prefix case and `uid_for_author` replaces the whole mapping for a server running its own auth back-end.
 
 ## `is_carrying()` takes four things
 

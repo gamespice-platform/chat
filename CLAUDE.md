@@ -1,4 +1,4 @@
-# dot-chat
+# GameSpice Chat
 
 Text chat as a server-authoritative system: channels with an audience rule, sanitisation, rate and repetition limits, command prefixes, per-channel scrollback, a backlog for joining players, and a relay to the server's room on the website.
 
@@ -44,6 +44,6 @@ The family's two steps ([family CLAUDE.md](../../CLAUDE.md#validating-anything))
 - `is_carrying()` needs all four: started, enabled, `send_game_chat`, a client. [relay](docs/relay.md#is_carrying-takes-four-things)
 - A relayed line is `announce_from`, filtered in text and name, and never echoed back (a flag, not a sender match). [relay](docs/relay.md#announce_from-and-why-announce-was-not-enough)
 - `publish_commands()` re-reads `commands_fn` every time and builds at the relay's own `command_source`; a refusal from the site is INFO. [relay](docs/relay.md#telling-the-site-what-this-server-accepts)
-- `sm` is the player's, never the server's: consumed by the chat box before it is sent, one list per process (`dot_self_mute`, reached by path elsewhere), keyed by dot-server's scoreboard `key` with the name as fallback, in `user://dot_self_mute.json`. [design](docs/design.md#the-players-own-block-list-sm)
+- `sm` is the player's, never the server's: consumed by the chat box before it is sent, one list per process (`dot_self_mute`, reached by path elsewhere), keyed by GameSpice Server's scoreboard `key` with the name as fallback, in `user://dot_self_mute.json`. [design](docs/design.md#the-players-own-block-list-sm)
 
 Deliberately not here: a chat window, translation, voice, chat persistence, cross-server channels. [design](docs/design.md#deliberately-not-here)

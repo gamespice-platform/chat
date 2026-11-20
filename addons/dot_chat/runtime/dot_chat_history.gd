@@ -163,7 +163,7 @@ func describe_lines() -> PackedStringArray:
 		names.append(key as StringName)
 
 	# Not Array.sort(): Godot compares StringNames by their interned pointer, which is
-	# stable within a process and arbitrary between two. dot-net assigned wire ids from
+	# stable within a process and arbitrary between two. GameSpice Net assigned wire ids from
 	# such a sort and two peers gave one message type two different ids.
 	names.sort_custom(func(a: StringName, b: StringName) -> bool:
 		return String(a) < String(b))

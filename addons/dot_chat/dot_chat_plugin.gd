@@ -1,7 +1,7 @@
 @tool
 extends EditorPlugin
 
-## Editor entry point for dot-chat. Registers inspector types only.
+## Editor entry point for GameSpice Chat. Registers inspector types only.
 ##
 ## No autoloads. A process running a listen server holds a router and a client at
 ## once, and an autoload could be neither twice.

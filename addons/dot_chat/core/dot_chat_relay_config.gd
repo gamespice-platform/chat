@@ -98,7 +98,7 @@ extends DotConfig
 
 ## Prefix used to build a server uid from a site user id.
 ##
-## [b]This is the seam for a server that does not use TMC's auth.[/b] dot-auth namespaces
+## [b]This is the seam for a server that does not use TMC's auth.[/b] GameSpice Auth namespaces
 ## every identity by its provider — [code]backbone:clx8f2k0[/code],
 ## [code]steam:7656…[/code], [code]local:admin[/code] — so the uid an admin entry is
 ## keyed by depends on which provider authenticated them. The website relay's authors are
@@ -123,12 +123,12 @@ extends DotConfig
 ## How much a relayed command is trusted, as a [code]DotCmdContext.Source[/code].
 ##
 ## [b]3 is CHAT, and it is the default because a relayed line is somebody typing.[/b] On a
-## dot-server that leaves `sv_chat_commands` on — the default — a CHAT-sourced line reaches
+## GameSpice Server that leaves `sv_chat_commands` on — the default — a CHAT-sourced line reaches
 ## every command that has not refused chat outright, and the flags the person actually holds
 ## decide the rest. That is the same treatment a player in the game gets, which is what a
 ## website chat box is.
 ##
-## It used to mean considerably less: dot-server refused a CHAT-sourced command unless it
+## It used to mean considerably less: GameSpice Server refused a CHAT-sourced command unless it
 ## was marked [code]with_chat()[/code], so a site administrator changing the map had to be
 ## promoted to RCON to do it. The commands that genuinely must not be typed say so
 ## themselves now, with [code]no_chat()[/code], and no source setting overrules that.
@@ -137,8 +137,8 @@ extends DotConfig
 ## That reaches everything RCON reaches, so it is a decision rather than a default — and
 ## it is still bounded by the person's own flags, never root.
 ##
-## An int rather than the enum because dot-chat cannot name [DotCmdContext]: it depends
-## on dot-core and nothing else, and the host is what owns a console.
+## An int rather than the enum because GameSpice Chat cannot name [DotCmdContext]: it depends
+## on GameSpice Core and nothing else, and the host is what owns a console.
 @export_range(0, 4, 1) var command_source: int = 3
 
 @export_group("Delivery")

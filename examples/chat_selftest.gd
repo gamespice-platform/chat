@@ -591,7 +591,7 @@ func _test_client() -> void:
 
 
 ## The player's own block list, `sm`. Everything but the chat box and the voice manager is
-## here; dot-ui's suite proves `!sm` never leaves the box, dot-game's the whole client.
+## here; GameSpice UI's suite proves `!sm` never leaves the box, GameSpice Game's the whole client.
 class FakeVoice extends RefCounted:
 	var muted: Dictionary = {}
 	func set_local_mute(peer: int, on: bool) -> void:

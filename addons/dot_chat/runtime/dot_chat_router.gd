@@ -8,10 +8,10 @@ extends DotChatRouterAudience
 ## players — whether they are allowed to speak, how fast, what the text may contain,
 ## whose window it lands in, and what name is drawn beside it.
 ##
-## [b]dot-chat sends nothing itself.[/b] It has no transport, no RPC and no opinion
+## [b]GameSpice Chat sends nothing itself.[/b] It has no transport, no RPC and no opinion
 ## about your netcode: the host gives it a [member send_fn] and it hands that a wire
-## dictionary and a list of peers. That is what lets the same router serve a dot-net
-## game, a dot-server module, a loopback test and a single-player game where
+## dictionary and a list of peers. That is what lets the same router serve a GameSpice Net
+## game, a GameSpice Server module, a loopback test and a single-player game where
 ## [member send_fn] draws straight into the window.
 ##
 ## [codeblock]
@@ -40,7 +40,7 @@ const CHANNEL := "chat"
 ## The registry name this publishes itself under.
 const SERVICE := &"dot_chat_router"
 
-## The registry name a gag source is looked up by. dot-moderation's manager
+## The registry name a gag source is looked up by. GameSpice Moderation's manager
 ## registers itself here; anything answering [code]is_chat_muted(peer) -> bool[/code]
 ## will do.
 const MUTE_SERVICE := &"dot_mute_source"
@@ -54,7 +54,7 @@ signal message_refused(peer: int, code: String, reason: String)
 
 ## A line beginning with a command prefix. The router does not broadcast these.
 ##
-## [b]This is the whole integration with dot-server's chat commands and dot-vote's
+## [b]This is the whole integration with GameSpice Server's chat commands and GameSpice Vote's
 ## [code]!rtv[/code].[/b] The host connects, matches the command, and either handles
 ## it or tells the player nothing did.
 signal command_entered(peer: int, command: String, args: PackedStringArray, raw: String)
@@ -111,7 +111,7 @@ func _ready() -> void:
 ##
 ## Explicit because a router created through a [DotNodeRef] has already run
 ## [method _ready] by the time its host assigns [member rules] — the same ordering
-## that left dot-server's audit log unopened in every default configuration, warning
+## that left GameSpice Server's audit log unopened in every default configuration, warning
 ## about it on every boot in a way that read like a setting nobody had filled in.
 func start() -> DotResult:
 	if _started:
@@ -606,7 +606,7 @@ func _send(
 	return DotResult.success(message)
 
 
-## DEBUG, as dot-inventory does: on an authoritative server a refusal is the rules being
+## DEBUG, as GameSpice Inventory does: on an authoritative server a refusal is the rules being
 ## enforced -- a flood, a duplicate, a filtered line -- and WARN would fill the log with
 ## the sound of the system working. The sender is told; this is for "why did my message
 ## not go through", asked after the fact.
@@ -631,7 +631,7 @@ func recipients_for(message: DotChatMessage) -> PackedInt32Array:
 
 ## Whether [param peer] may not use text chat.
 ##
-## Asks whatever is registered as [member mute_service] — dot-moderation's manager,
+## Asks whatever is registered as [member mute_service] — GameSpice Moderation's manager,
 ## normally — and falls back to [member gag_fn]. A project with neither has nobody
 ## gagged, which is the correct answer rather than an error.
 func is_gagged(peer: int) -> bool:

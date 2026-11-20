@@ -3,7 +3,7 @@ extends RefCounted
 
 ## Turns a [DotChatMessage] into a line to draw. Ships no art and no scene.
 ##
-## dot-ui's rule applies here for the same reason: an addon that draws its own chat
+## GameSpice UI's rule applies here for the same reason: an addon that draws its own chat
 ## window is an addon every game has to fight. What a game actually wants from a chat
 ## addon is the [i]line[/i] — correctly attributed, correctly coloured, with the
 ## player's text kept as text — and then to draw it in its own window with its own
