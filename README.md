@@ -1,4 +1,4 @@
-[![dot-chat - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/232-dot-chat)
+[![Chat - GameSpice addon](docs/banner.png)](https://moddingcommunity.com/a/232-dot-chat)
 
 Text chat for Godot 4.7+ multiplayer games, decided by the server. It gives you channels with an audience rule, cleaning of markup and invisible characters, rate and repeat limits, command prefixes, scrollback, and a backlog for players who join later. Part of the [dot-*](https://github.com/gamespice-platform) family. It needs only [dot-core](https://github.com/gamespice-platform/core).
 
