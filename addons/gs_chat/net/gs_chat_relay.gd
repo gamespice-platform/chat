@@ -37,7 +37,7 @@ extends Node
 ## would be a second answer to "may this person do this", and the two would drift.
 
 const CHANNEL := "chat.relay"
-const SERVICE := &"dot_chat_relay"
+const SERVICE := &"gs_chat_relay"
 
 ## Where the two halves of the loop live on the backbone.
 ##
@@ -49,7 +49,7 @@ const PATH_OUTBOUND := "chat/outbound"
 ## Where the command list is published, so a site composer can offer it.
 const PATH_COMMANDS := "chat/commands"
 
-const DEFAULT_CURSOR_PATH := "user://dot_chat_relay_cursor.json"
+const DEFAULT_CURSOR_PATH := "user://gs_chat_relay_cursor.json"
 
 ## A line arrived from the website and was announced in game.
 signal site_line(author: String, author_uid: String, text: String)

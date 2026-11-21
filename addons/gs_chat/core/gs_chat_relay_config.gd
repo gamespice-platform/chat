@@ -159,12 +159,12 @@ extends GSConfig
 ## server has already put in front of its players; losing it means the next poll has no
 ## [code]since[/code] and the endpoint answers with the most recent page, which is an
 ## hour of the website's conversation arriving in the game at once. Empty uses
-## [code]user://dot_chat_relay_cursor.json[/code].
+## [code]user://gs_chat_relay_cursor.json[/code].
 @export var cursor_path: String = ""
 
 
 func env_prefix() -> String:
-	return "DOT_CHAT_RELAY_"
+	return "GS_CHAT_RELAY_"
 
 
 func cli_prefix() -> String:

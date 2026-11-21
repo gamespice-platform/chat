@@ -13,13 +13,13 @@ extends RefCounted
 ## [/codeblock]
 ##
 ## [b]This client only, and nobody is told.[/b] A moderator's gag is the server's and
-## everybody's ([GSChatRouter]'s `dot_mute_source`); this is a preference, like closing
+## everybody's ([GSChatRouter]'s `gs_mute_source`); this is a preference, like closing
 ## your ears, so it never crosses the wire: the line `!sm ada` is consumed by the chat box
 ## before it could be sent, the muted player cannot tell, and the server keeps no list it
 ## could leak. Lines are dropped before they are drawn; voice frames are dropped before
 ## they are decoded ([code]GSVoiceManager.set_local_mute[/code]).
 ##
-## [b]One list for the whole process, in the registry as `dot_self_mute`.[/b] The chat box,
+## [b]One list for the whole process, in the registry as `gs_self_mute`.[/b] The chat box,
 ## the console, the chat client and every voice manager ask [method shared] for it, so a
 ## delivered game the shell switches to finds the same list the last game had, and the
 ## file it is kept in ([member path]) is named for the list, not for any game: inside the
@@ -35,27 +35,27 @@ extends RefCounted
 ## first time a roster shows that name with one.
 ##
 ## [b]Nothing here names GameSpice Server, GameSpice UI or GameSpice Voice.[/b] The link is the registry's
-## `dot_client_link`, read for `scoreboard_received` and `request_scoreboard()`; the voice
-## manager is the registry's `dot_voice_client` (bound as it is published), or anything
+## `gs_client_link`, read for `scoreboard_received` and `request_scoreboard()`; the voice
+## manager is the registry's `gs_voice_client` (bound as it is published), or anything
 ## handed to [method attach_voice] with `set_local_mute(peer, muted)`. GameSpice Chat keeps its one
 ## dependency.
 
 const CHANNEL := "chat.self_mute"
 
 ## The registry name the shared list is published under.
-const SERVICE := &"dot_self_mute"
+const SERVICE := &"gs_self_mute"
 
 ## Where every consumer that does not name this class loads it from.
-const SCRIPT_PATH := "res://addons/dot_chat/runtime/dot_chat_self_mute.gd"
+const SCRIPT_PATH := "res://addons/gs_chat/runtime/gs_chat_self_mute.gd"
 
-const LINK_SERVICE := &"dot_client_link"
+const LINK_SERVICE := &"gs_client_link"
 
 ## Where a game's own player's voice manager is published (GameSpice Voice's
 ## `GSVoiceManager.CLIENT_SERVICE`, by `publish_as_client()`). Bound by name, so neither
 ## addon loads the other: whichever is built first, the list finds the manager.
-const VOICE_SERVICE := &"dot_voice_client"
+const VOICE_SERVICE := &"gs_voice_client"
 
-const DEFAULT_PATH := "user://dot_self_mute.json"
+const DEFAULT_PATH := "user://gs_self_mute.json"
 
 const FORMAT_VERSION := 1
 

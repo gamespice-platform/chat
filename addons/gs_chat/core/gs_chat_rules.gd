@@ -124,7 +124,7 @@ extends GSConfig
 
 
 func env_prefix() -> String:
-	return "DOT_CHAT_"
+	return "GS_CHAT_"
 
 
 func cli_prefix() -> String:

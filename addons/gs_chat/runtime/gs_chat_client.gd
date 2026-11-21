@@ -30,7 +30,7 @@ extends Node
 
 const CHANNEL := "chat"
 
-const SERVICE := &"dot_chat_client"
+const SERVICE := &"gs_chat_client"
 
 ## A message arrived and has been filed.
 signal message_received(message: GSChatMessage, channel_id: StringName)

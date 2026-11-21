@@ -1,6 +1,6 @@
 # Design
 
-What dot-chat decides, who hears a line, and what it deliberately leaves to others. The website relay is [relay.md](relay.md); the bugs are [history.md](history.md).
+What gs-chat decides, who hears a line, and what it deliberately leaves to others. The website relay is [relay.md](relay.md); the bugs are [history.md](history.md).
 
 ## What this is, and what it is not
 
@@ -30,7 +30,7 @@ That is also why sanitisation is server-side and its output is what everybody re
 
 ## Gags
 
-`GSChatRouter.is_gagged` resolves `dot_mute_source` from `GSRegistry` and duck-types `is_chat_muted(peer)` on it. Neither addon names the other: a project with only GameSpice Chat has nobody gagged (the correct answer, not an error), and a project with only GameSpice Moderation is unchanged. GameSpice Moderation published that method long before anything called it; GameSpice Voice consumes the voice half of the same source.
+`GSChatRouter.is_gagged` resolves `gs_mute_source` from `GSRegistry` and duck-types `is_chat_muted(peer)` on it. Neither addon names the other: a project with only GameSpice Chat has nobody gagged (the correct answer, not an error), and a project with only GameSpice Moderation is unchanged. GameSpice Moderation published that method long before anything called it; GameSpice Voice consumes the voice half of the same source.
 
 ## Things that look like they should be settings and are not
 
@@ -51,16 +51,16 @@ That is also why sanitisation is server-side and its output is what everybody re
 
 `GSChatSelfMute` is the one piece of GameSpice Chat that is the player's rather than the server's: the people whose chat this client does not draw and whose voice it does not play. Typed as `sm` in the console, `!sm` or `/sm` in chat; `sm` lists who is here, numbered, with who is muted; `sm <number>`, `sm <name>` (whole first, then a unique part, any case) or `sm #userid` toggles.
 
-- **Never on the wire.** The chat box (GameSpice UI's `GSChatWindow`) consumes `!sm` / `/sm` before `submitted`, so the server never sees the line, nobody is told, and there is no server-side list to leak. A moderator's gag is a different feature and stays `dot_mute_source`'s.
-- **One list per process, `dot_self_mute` in the registry** (`GSChatSelfMute.shared()`). GameSpice UI, GameSpice Game, GameSpice Console and GameSpice Voice reach it by path (`SCRIPT_PATH`) and duck typing, so none of them depends on GameSpice Chat. Inside the shell every delivered game shares the shell's `user://`, so the file (`user://dot_self_mute.json`) is named for the list, not a game, and a pack switch finds the same list.
+- **Never on the wire.** The chat box (GameSpice UI's `GSChatWindow`) consumes `!sm` / `/sm` before `submitted`, so the server never sees the line, nobody is told, and there is no server-side list to leak. A moderator's gag is a different feature and stays `gs_mute_source`'s.
+- **One list per process, `gs_self_mute` in the registry** (`GSChatSelfMute.shared()`). GameSpice UI, GameSpice Game, GameSpice Console and GameSpice Voice reach it by path (`SCRIPT_PATH`) and duck typing, so none of them depends on GameSpice Chat. Inside the shell every delivered game shares the shell's `user://`, so the file (`user://gs_self_mute.json`) is named for the list, not a game, and a pack switch finds the same list.
 - **Keyed by GameSpice Server's scoreboard `key`, the name as fallback.** `sender_key` is the userid, which a reconnect changes. GameSpice Server's rows carry `key` (a per-server salted digest of the account) and `peer`; the list asks for a roster every `refresh_sec` with `request_scoreboard()` (one board, a held one stays held). An entry made by name learns the key when a roster shows it; a keyed row with the same name and another key is somebody else and is not muted.
-- **Dropped before drawing, before decoding.** `GSChatClient` drops a muted player's `say`, `action` and `whisper` after the sequence bookkeeping (no false gap) and before the history (not unread, not in scrollback), backlog included; join and leave notices are the server's lines and stay. `GSChatWindow.add_said` drops them too, for games that draw without `GSChatClient`. Voice: the player's own manager is bound by registry name as GameSpice Voice publishes it (`dot_voice_client`, `publish_as_client()`; `service_registered` covers either order), or handed over with `attach_voice(manager)`; each muted roster row's `peer` is muted with `set_local_mute`, and only what the list did is undone. GameSpice Voice does not load GameSpice Chat and GameSpice Chat does not name GameSpice Voice.
+- **Dropped before drawing, before decoding.** `GSChatClient` drops a muted player's `say`, `action` and `whisper` after the sequence bookkeeping (no false gap) and before the history (not unread, not in scrollback), backlog included; join and leave notices are the server's lines and stay. `GSChatWindow.add_said` drops them too, for games that draw without `GSChatClient`. Voice: the player's own manager is bound by registry name as GameSpice Voice publishes it (`gs_voice_client`, `publish_as_client()`; `service_registered` covers either order), or handed over with `attach_voice(manager)`; each muted roster row's `peer` is muted with `set_local_mute`, and only what the list did is undone. GameSpice Voice does not load GameSpice Chat and GameSpice Chat does not name GameSpice Voice.
 - **What it cannot do:** mute the voice of a player whose peer it has not seen in a roster (a server before GameSpice Server API 9 sends no `peer`, and a reconnect plays until the next roster, at most `refresh_sec`).
 
 ## Deliberately not here
 
 - **A chat window.** No scene, no theme, no `RichTextLabel`. `GSChatFormat` gives you the line; GameSpice Game's `GSGameChatClient` and GameSpice UI draw it.
-- **Translation.** A message is text a player typed; translating it is a per-game decision and dot-chat has no string table.
+- **Translation.** A message is text a player typed; translating it is a per-game decision and gs-chat has no string table.
 - **Voice.** GameSpice Voice; the two meet only at GameSpice Moderation, which publishes one source both consult.
 - **Persistence of chat.** History is in memory and capped, per channel *and* in total. A community that wants chat logs on disk connects `message_accepted` to a log sink, which is a log, and belongs in one.
 - **Cross-server chat.** A router is one server's. A backbone-relayed channel would be a `GSChatChannel` with a `MEMBERS` scope and a source that is not this process, and nothing about the design refuses it. `GSChatRelay` is the first thing to take that door: it does not add a channel, it announces into an existing one.

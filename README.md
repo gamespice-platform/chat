@@ -13,10 +13,10 @@ The server decides who hears a line, what it may contain, and what name is drawn
 
 ## Install
 
-1. Copy `addons/dot_chat/` and `addons/dot_core/` into your project.
-2. Enable dot-chat in *Project > Project Settings > Plugins*.
+1. Copy `addons/gs_chat/` and `addons/gs_core/` into your project.
+2. Enable gs-chat in *Project > Project Settings > Plugins*.
 
-[GameSpice Moderation](https://github.com/gamespice-platform/moderation) is optional. When it is present, its gags apply with no wiring: the router asks whatever is registered as `dot_mute_source`, and neither addon names the other.
+[GameSpice Moderation](https://github.com/gamespice-platform/moderation) is optional. When it is present, its gags apply with no wiring: the router asks whatever is registered as `gs_mute_source`, and neither addon names the other.
 
 ## Quick start
 
@@ -123,7 +123,7 @@ GameSpice Chat ships no art. [GameSpice UI](https://github.com/gamespice-platfor
 
 ## Is the line reaching the site?
 
-`GSChatRelay.is_carrying()` tells you whether a line typed in game reaches the site right now. It is true only when the relay is started, enabled, sending game chat and holding a credential. dot-server hands that answer to each joining player, so a client can decide whether to draw its own chat box or leave it to the embedding page. See [docs/relay.md](docs/relay.md).
+`GSChatRelay.is_carrying()` tells you whether a line typed in game reaches the site right now. It is true only when the relay is started, enabled, sending game chat and holding a credential. gs-server hands that answer to each joining player, so a client can decide whether to draw its own chat box or leave it to the embedding page. See [docs/relay.md](docs/relay.md).
 
 More: [docs/design.md](docs/design.md), [docs/history.md](docs/history.md).
 

@@ -16,7 +16,7 @@ A relayed command is resolved to a uid and handed to the host's `permission_fn`:
 
 `GSChatRelay.is_carrying()` answers "does a line typed in game actually reach the site right now", and **four things have to be true**: started, enabled, `send_game_chat`, and a backbone client. A relay that is enabled with no client refused to start; one configured to receive only carries the site's lines inward and none of the game's outward. Answering "enabled" to either tells a client the conversation is carried when it is not, and what that looks like is a room full of people talking to a page that never hears them.
 
-dot-server hands the answer to a joining player (its `GSChatManager.chat_state`), and a client decides from it whether to draw a chat box in front of the game at all. Nothing here knows that; this only answers honestly.
+gs-server hands the answer to a joining player (its `GSChatManager.chat_state`), and a client decides from it whether to draw a chat box in front of the game at all. Nothing here knows that; this only answers honestly.
 
 ## `announce_from`, and why `announce` was not enough
 
@@ -34,6 +34,6 @@ Both the text *and* the sender name go through `GSChatFilter`, for a stronger re
 
 **Nothing published is a permission**, which is what makes accepting the list safe at the other end. Whether a particular person may run a particular command is decided here, per line, by `permission_fn` against this server's own admin file. The list decides only what is worth *offering*, and offering something that will always be refused teaches people the site is broken, which is why the source gate travels with it.
 
-That gate is the part worth reading twice. dot-server's `GSConsole.command_document(source)` applies **the same source check `_run_command` applies**, so the menu is built at the relay's own `command_source`: a relay running as CHAT offers what that server takes from chat (with `sv_chat_commands` on, the default, everything that has not called `no_chat()`), and a relay running as RCON offers everything RCON reaches. A menu built from a per-command flag alone would hide an operator's whole toolbox from a deployment that deliberately made its site admins remote administrators, and, on a server that closed chat commands, offer a table where every entry is refused.
+That gate is the part worth reading twice. gs-server's `GSConsole.command_document(source)` applies **the same source check `_run_command` applies**, so the menu is built at the relay's own `command_source`: a relay running as CHAT offers what that server takes from chat (with `sv_chat_commands` on, the default, everything that has not called `no_chat()`), and a relay running as RCON offers everything RCON reaches. A menu built from a per-command flag alone would hide an operator's whole toolbox from a deployment that deliberately made its site admins remote administrators, and, on a server that closed chat commands, offer a table where every entry is refused.
 
 A backbone that refuses the list does not take the relay down with it: an older site with no such endpoint is a menu that is empty, not a server whose chat has stopped. It logs at INFO, because a red line about a condition that is normal is how a real one stops being read.

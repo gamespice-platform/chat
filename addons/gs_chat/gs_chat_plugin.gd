@@ -6,11 +6,11 @@ extends EditorPlugin
 ## No autoloads. A process running a listen server holds a router and a client at
 ## once, and an autoload could be neither twice.
 
-const _ICON := "res://addons/dot_chat/icon_placeholder.svg"
+const _ICON := "res://addons/gs_chat/icon_placeholder.svg"
 
 const _TYPES := [
-	["GSChatRouter", "Node", "res://addons/dot_chat/runtime/dot_chat_router.gd"],
-	["GSChatClient", "Node", "res://addons/dot_chat/runtime/dot_chat_client.gd"],
+	["GSChatRouter", "Node", "res://addons/gs_chat/runtime/gs_chat_router.gd"],
+	["GSChatClient", "Node", "res://addons/gs_chat/runtime/gs_chat_client.gd"],
 ]
 
 

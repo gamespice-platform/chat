@@ -30,7 +30,7 @@ extends GSChatRouterAudience
 ## [/codeblock]
 ##
 ## [b]Gags are asked for, not stored.[/b] The router looks up whatever is registered
-## as [code]dot_mute_source[/code] and calls [code]is_chat_muted(peer)[/code] on it —
+## as [code]gs_mute_source[/code] and calls [code]is_chat_muted(peer)[/code] on it —
 ## which is exactly the method [GSModerationManager] publishes and which, until this
 ## addon existed, nothing in the family called. Neither addon names the other and a
 ## project with only one of them works.
@@ -38,12 +38,12 @@ extends GSChatRouterAudience
 const CHANNEL := "chat"
 
 ## The registry name this publishes itself under.
-const SERVICE := &"dot_chat_router"
+const SERVICE := &"gs_chat_router"
 
 ## The registry name a gag source is looked up by. GameSpice Moderation's manager
 ## registers itself here; anything answering [code]is_chat_muted(peer) -> bool[/code]
 ## will do.
-const MUTE_SERVICE := &"dot_mute_source"
+const MUTE_SERVICE := &"gs_mute_source"
 
 ## A message was accepted and handed to [member send_fn].
 signal message_accepted(message: GSChatMessage, recipients: PackedInt32Array)

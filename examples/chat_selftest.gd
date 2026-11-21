@@ -1,6 +1,6 @@
 extends "res://examples/chat_selftest_base.gd"
 
-## Exercises dot-chat with no transport and no other addon.
+## Exercises gs-chat with no transport and no other addon.
 ##
 ## The router is given callables that answer out of dictionaries, which is exactly
 ## the seam a real host fills with its session table — so every check here is about
@@ -22,7 +22,7 @@ func _ready() -> void:
 
 
 func _run() -> void:
-	_line("dot-chat self-test")
+	_line("gs-chat self-test")
 	_line("")
 
 	_test_message_wire()
@@ -711,7 +711,7 @@ func _test_self_mute() -> void:
 	list.watch()
 	var published := FakeVoice.new()
 	GSRegistry.register(GSChatSelfMute.VOICE_SERVICE, published)
-	_check(published.muted.has(301), "a voice manager published as dot_voice_client is bound as it appears")
+	_check(published.muted.has(301), "a voice manager published as gs_voice_client is bound as it appears")
 	GSRegistry.unregister_instance(GSChatSelfMute.VOICE_SERVICE, published)
 
 	client.queue_free()
