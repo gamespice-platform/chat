@@ -1,4 +1,4 @@
-class_name DotChatHistory
+class_name GSChatHistory
 extends RefCounted
 
 ## Recent chat, capped per channel and in total.
@@ -21,7 +21,7 @@ var limits: Dictionary = {}
 var total_limit: int = 1000
 
 var _by_channel: Dictionary = {}
-var _order: Array[DotChatMessage] = []
+var _order: Array[GSChatMessage] = []
 
 
 func _init(p_total_limit: int = 1000) -> void:
@@ -40,15 +40,15 @@ func limit_for(channel: StringName) -> int:
 	return 200
 
 
-func append(message: DotChatMessage) -> void:
+func append(message: GSChatMessage) -> void:
 	if limit_for(message.channel) <= 0:
 		return
 
 	if not _by_channel.has(message.channel):
-		var fresh: Array[DotChatMessage] = []
+		var fresh: Array[GSChatMessage] = []
 		_by_channel[message.channel] = fresh
 
-	var bucket: Array[DotChatMessage] = _by_channel[message.channel]
+	var bucket: Array[GSChatMessage] = _by_channel[message.channel]
 	bucket.append(message)
 	_order.append(message)
 
@@ -57,39 +57,39 @@ func append(message: DotChatMessage) -> void:
 
 
 ## The last [param count] messages on a channel, oldest first.
-func recent(channel: StringName, count: int = 50) -> Array[DotChatMessage]:
-	var out: Array[DotChatMessage] = []
+func recent(channel: StringName, count: int = 50) -> Array[GSChatMessage]:
+	var out: Array[GSChatMessage] = []
 	if not _by_channel.has(channel) or count <= 0:
 		return out
 
-	var bucket: Array[DotChatMessage] = _by_channel[channel]
+	var bucket: Array[GSChatMessage] = _by_channel[channel]
 	var start := maxi(0, bucket.size() - count)
 
 	for i in range(start, bucket.size()):
-		out.append((bucket[i] as DotChatMessage).duplicate_message())
+		out.append((bucket[i] as GSChatMessage).duplicate_message())
 
 	return out
 
 
 ## The last [param count] messages across every channel, in the order they arrived.
-func recent_all(count: int = 50) -> Array[DotChatMessage]:
-	var out: Array[DotChatMessage] = []
+func recent_all(count: int = 50) -> Array[GSChatMessage]:
+	var out: Array[GSChatMessage] = []
 	var start := maxi(0, _order.size() - maxi(0, count))
 
 	for i in range(start, _order.size()):
-		out.append((_order[i] as DotChatMessage).duplicate_message())
+		out.append((_order[i] as GSChatMessage).duplicate_message())
 
 	return out
 
 
 ## Every message a given peer or key sent, for a moderator looking at somebody.
-func by_sender(sender_key: String, count: int = 50) -> Array[DotChatMessage]:
-	var out: Array[DotChatMessage] = []
+func by_sender(sender_key: String, count: int = 50) -> Array[GSChatMessage]:
+	var out: Array[GSChatMessage] = []
 
 	for i in range(_order.size() - 1, -1, -1):
 		if out.size() >= count:
 			break
-		var message: DotChatMessage = _order[i]
+		var message: GSChatMessage = _order[i]
 		if message.sender_key == sender_key:
 			out.append(message.duplicate_message())
 
@@ -116,7 +116,7 @@ func clear_channel(channel: StringName) -> void:
 	if not _by_channel.has(channel):
 		return
 
-	var bucket: Array[DotChatMessage] = _by_channel[channel]
+	var bucket: Array[GSChatMessage] = _by_channel[channel]
 	for message in bucket:
 		var index := _order.find(message)
 		if index >= 0:
@@ -130,10 +130,10 @@ func _trim_channel(channel: StringName) -> void:
 		return
 
 	var limit := limit_for(channel)
-	var bucket: Array[DotChatMessage] = _by_channel[channel]
+	var bucket: Array[GSChatMessage] = _by_channel[channel]
 
 	while bucket.size() > limit:
-		var dropped: DotChatMessage = bucket[0]
+		var dropped: GSChatMessage = bucket[0]
 		bucket.remove_at(0)
 		var index := _order.find(dropped)
 		if index >= 0:
@@ -145,10 +145,10 @@ func _trim_total() -> void:
 		return
 
 	while _order.size() > total_limit:
-		var dropped: DotChatMessage = _order[0]
+		var dropped: GSChatMessage = _order[0]
 		_order.remove_at(0)
 		if _by_channel.has(dropped.channel):
-			var bucket: Array[DotChatMessage] = _by_channel[dropped.channel]
+			var bucket: Array[GSChatMessage] = _by_channel[dropped.channel]
 			var index := bucket.find(dropped)
 			if index >= 0:
 				bucket.remove_at(index)

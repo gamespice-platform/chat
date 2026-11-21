@@ -1,4 +1,4 @@
-class_name DotChatSelfMute
+class_name GSChatSelfMute
 extends RefCounted
 
 ## A player's own block list: the people whose chat this client does not draw and whose
@@ -13,11 +13,11 @@ extends RefCounted
 ## [/codeblock]
 ##
 ## [b]This client only, and nobody is told.[/b] A moderator's gag is the server's and
-## everybody's ([DotChatRouter]'s `dot_mute_source`); this is a preference, like closing
+## everybody's ([GSChatRouter]'s `dot_mute_source`); this is a preference, like closing
 ## your ears, so it never crosses the wire: the line `!sm ada` is consumed by the chat box
 ## before it could be sent, the muted player cannot tell, and the server keeps no list it
 ## could leak. Lines are dropped before they are drawn; voice frames are dropped before
-## they are decoded ([code]DotVoiceManager.set_local_mute[/code]).
+## they are decoded ([code]GSVoiceManager.set_local_mute[/code]).
 ##
 ## [b]One list for the whole process, in the registry as `dot_self_mute`.[/b] The chat box,
 ## the console, the chat client and every voice manager ask [method shared] for it, so a
@@ -51,7 +51,7 @@ const SCRIPT_PATH := "res://addons/dot_chat/runtime/dot_chat_self_mute.gd"
 const LINK_SERVICE := &"dot_client_link"
 
 ## Where a game's own player's voice manager is published (GameSpice Voice's
-## `DotVoiceManager.CLIENT_SERVICE`, by `publish_as_client()`). Bound by name, so neither
+## `GSVoiceManager.CLIENT_SERVICE`, by `publish_as_client()`). Bound by name, so neither
 ## addon loads the other: whichever is built first, the list finds the manager.
 const VOICE_SERVICE := &"dot_voice_client"
 
@@ -98,13 +98,13 @@ var _ticking: bool = false
 ## Returns an [Object], not this class: a list registered by another build of this script (a
 ## delivered pack's overlay) is still the list, and every caller duck-types it.
 static func shared() -> Object:
-	var existing: Object = DotRegistry.get_service(SERVICE)
+	var existing: Object = GSRegistry.get_service(SERVICE)
 	if existing != null:
 		return existing
 
-	var made := DotChatSelfMute.new()
+	var made := GSChatSelfMute.new()
 	made.load_list()
-	DotRegistry.register(SERVICE, made)
+	GSRegistry.register(SERVICE, made)
 	made.watch()
 	return made
 
@@ -118,7 +118,7 @@ func load_list() -> void:
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if not (parsed is Dictionary) or not ((parsed as Dictionary).get("entries") is Array):
-		DotLog.warn(CHANNEL, "the self-mute list could not be read; starting empty", {"path": path})
+		GSLog.warn(CHANNEL, "the self-mute list could not be read; starting empty", {"path": path})
 		return
 
 	for raw in (parsed as Dictionary)["entries"]:
@@ -136,7 +136,7 @@ func save_list() -> void:
 	var _made := DirAccess.make_dir_recursive_absolute(path.get_base_dir())
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
-		DotLog.warn(CHANNEL, "the self-mute list could not be saved", {
+		GSLog.warn(CHANNEL, "the self-mute list could not be saved", {
 			"path": path, "error": error_string(FileAccess.get_open_error()),
 		})
 		return
@@ -144,7 +144,7 @@ func save_list() -> void:
 	file.store_string(JSON.stringify({"version": FORMAT_VERSION, "entries": entries}, "\t"))
 	file.close()
 	# A browser's user:// is an IndexedDB mirror: unflushed, a reload forgets the list.
-	DotWeb.sync_filesystem()
+	GSWeb.sync_filesystem()
 
 
 # --- The roster ----------------------------------------------------------------
@@ -153,10 +153,10 @@ func save_list() -> void:
 ## voice manager whenever one is published.
 func watch() -> void:
 	_watch_link()
-	var bus := DotRegistry.signals()
+	var bus := GSRegistry.signals()
 	if not bus.service_registered.is_connected(_on_service_registered):
 		bus.service_registered.connect(_on_service_registered)
-	var voice: Object = DotRegistry.get_service(VOICE_SERVICE)
+	var voice: Object = GSRegistry.get_service(VOICE_SERVICE)
 	if voice != null:
 		attach_voice(voice)
 	if _ticking:
@@ -191,7 +191,7 @@ func refresh() -> void:
 ## Connects to the link, again whenever it is a different one. The shell's link outlives
 ## every game; a game run alone publishes its own.
 func _watch_link() -> Object:
-	var current: Object = link if link != null else DotRegistry.get_service(LINK_SERVICE)
+	var current: Object = link if link != null else GSRegistry.get_service(LINK_SERVICE)
 	if current == null or not is_instance_valid(current):
 		return null
 
@@ -339,7 +339,7 @@ func set_muted(who: Dictionary, muted: bool) -> void:
 				kept.append(entry)
 		entries = kept
 
-	DotLog.debug(CHANNEL, "muted" if muted else "unmuted", {"keyed": key != ""})
+	GSLog.debug(CHANNEL, "muted" if muted else "unmuted", {"keyed": key != ""})
 	save_list()
 	_apply_voices()
 	changed.emit()

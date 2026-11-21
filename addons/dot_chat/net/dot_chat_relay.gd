@@ -1,19 +1,19 @@
 @tool
-class_name DotChatRelay
+class_name GSChatRelay
 extends Node
 
 ## The other half of a conversation: the website's chat room and the match's, joined.
 ##
 ## A player on a web page and a player in the match cannot see each other. The site has a
 ## room per server — `LiveChatScope.GAME`, which its own model calls "relayed in-game
-## chat" — and the game has [DotChatRouter], and until this existed neither had ever said
+## chat" — and the game has [GSChatRouter], and until this existed neither had ever said
 ## a word to the other. This carries lines both ways and, optionally, lets a line typed on
 ## the site run as a console command.
 ##
 ## [codeblock]
-## var relay := DotChatRelay.new()
+## var relay := GSChatRelay.new()
 ## relay.router = chat_router
-## relay.client = backbone_client          # GameSpice Auth's DotBackboneClient, duck-typed
+## relay.client = backbone_client          # GameSpice Auth's GSBackboneClient, duck-typed
 ## relay.config = my_relay_config
 ## relay.command_fn = _run_console_command
 ## relay.permission_fn = admins.uid_has_permission
@@ -21,14 +21,14 @@ extends Node
 ## [/codeblock]
 ##
 ## [b]The backbone client is held as an [Object] and never named.[/b] GameSpice Chat depends on
-## GameSpice Core and nothing else — a script that so much as MENTIONS [code]DotBackboneClient[/code]
+## GameSpice Core and nothing else — a script that so much as MENTIONS [code]GSBackboneClient[/code]
 ## fails to compile in a project without GameSpice Auth installed, which is most of them. Same
-## reasoning, and the same shape, as [code]DotStatsReporter[/code]. The contract is two
+## reasoning, and the same shape, as [code]GSStatsReporter[/code]. The contract is two
 ## methods:
 ##
 ## [codeblock]
-## func post_integration(path: String, body: Dictionary) -> DotResult
-## func get_integration(path: String, query: Dictionary) -> DotResult
+## func post_integration(path: String, body: Dictionary) -> GSResult
+## func get_integration(path: String, query: Dictionary) -> GSResult
 ## [/codeblock]
 ##
 ## [b]Nothing here decides a permission.[/b] A relayed command is resolved to a uid and
@@ -64,9 +64,9 @@ signal site_command(author_uid: String, command: String, allowed: bool)
 signal delivered(count: int, ok: bool)
 
 ## The router this is joined to. Required.
-@export var router: DotChatRouter = null
+@export var router: GSChatRouter = null
 
-@export var config: DotChatRelayConfig = null
+@export var config: GSChatRelayConfig = null
 
 ## Registry name, or empty not to register.
 @export var register_as: StringName = SERVICE
@@ -76,14 +76,14 @@ var client: Object = null
 
 ## Builds a server uid from a site user id. Replaceable for a non-TMC deployment.
 ##
-## Defaults to [member DotChatRelayConfig.author_uid_prefix] plus the id. A deployment
+## Defaults to [member GSChatRelayConfig.author_uid_prefix] plus the id. A deployment
 ## whose mapping is not a prefix — a lookup table, a hash — assigns its own.
 var uid_for_author: Callable = Callable()
 
 ## Runs a console command as somebody.
 ##
 ## `(uid: String, command: String, args: PackedStringArray, source: int)` — the source is
-## [member DotChatRelayConfig.command_source], passed through rather than decided here.
+## [member GSChatRelayConfig.command_source], passed through rather than decided here.
 ##
 ## [b]A callable rather than a reference to a console.[/b] GameSpice Chat does not depend on
 ## GameSpice Server and must not: the games that use one use both, and the two that do not are
@@ -92,7 +92,7 @@ var command_fn: Callable = Callable()
 
 ## Asks whether a uid holds a flag. `(uid: String, flag: String) -> bool`.
 ##
-## Pointed at `DotAdminManager.uid_has_permission` in every game here, which is the method
+## Pointed at `GSAdminManager.uid_has_permission` in every game here, which is the method
 ## that already exists for exactly this question — deciding what somebody may do when they
 ## are not connected.
 var permission_fn: Callable = Callable()
@@ -136,16 +136,16 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	if register_as != &"" and DotRegistry.get_service(register_as) == self:
-		DotRegistry.unregister(register_as)
+	if register_as != &"" and GSRegistry.get_service(register_as) == self:
+		GSRegistry.unregister(register_as)
 
 
-func start() -> DotResult:
+func start() -> GSResult:
 	if _started:
-		return DotResult.success(self)
+		return GSResult.success(self)
 
 	if config == null:
-		config = DotChatRelayConfig.new()
+		config = GSChatRelayConfig.new()
 
 	var valid := config.validate()
 	if not valid.ok:
@@ -155,18 +155,18 @@ func start() -> DotResult:
 		# Not an error, and deliberately quiet. A server with no credential is the
 		# commonest deployment there is, and a warning on every boot about a feature
 		# nobody asked for is the shape this family calls "a setting nobody filled in".
-		DotLog.debug(CHANNEL, "the chat relay is disabled")
+		GSLog.debug(CHANNEL, "the chat relay is disabled")
 		_started = true
-		return DotResult.success(self)
+		return GSResult.success(self)
 
 	if router == null:
-		return DotResult.fail(
-			DotError.CODE_STATE, "The chat relay needs a DotChatRouter."
+		return GSResult.fail(
+			GSError.CODE_STATE, "The chat relay needs a GSChatRouter."
 		)
 
 	if client == null:
-		return DotResult.fail(
-			DotError.CODE_STATE,
+		return GSResult.fail(
+			GSError.CODE_STATE,
 			"The chat relay is enabled but has no backbone client."
 		)
 
@@ -188,7 +188,7 @@ func start() -> DotResult:
 		add_child(_timer)
 
 	if register_as != &"":
-		DotRegistry.register(register_as, self)
+		GSRegistry.register(register_as, self)
 
 	_started = true
 
@@ -199,13 +199,13 @@ func start() -> DotResult:
 	if config.publish_commands:
 		publish_commands()
 
-	DotLog.info(CHANNEL, "chat relay started", {
+	GSLog.info(CHANNEL, "chat relay started", {
 		"poll": config.poll_seconds,
 		"commands": config.allow_commands,
 		"cursor": _cursor if _cursor != "" else "(none)",
 	})
 
-	return DotResult.success(self)
+	return GSResult.success(self)
 
 
 # --- What this server accepts ----------------------------------------------
@@ -230,7 +230,7 @@ func publish_commands() -> void:
 
 	var listed: Variant = commands_fn.call()
 	if not (listed is Array):
-		DotLog.warn(CHANNEL, "commands_fn did not answer with an array", {
+		GSLog.warn(CHANNEL, "commands_fn did not answer with an array", {
 			"got": type_string(typeof(listed)),
 		})
 		return
@@ -243,26 +243,26 @@ func publish_commands() -> void:
 	var res: Variant = await client.call(
 		"post_integration", PATH_COMMANDS, {"commands": rows}
 	)
-	var result := res as DotResult
+	var result := res as GSResult
 
 	if result == null or not result.ok:
 		# Info, not a warning. A deployment whose backbone has no such endpoint -- an older
 		# site, or one that never enabled the feature -- would otherwise print a red line
 		# every time a module loaded, and a red line about a condition that is normal is how
 		# a real one stops being read.
-		DotLog.info(CHANNEL, "the command list was not published", {
+		GSLog.info(CHANNEL, "the command list was not published", {
 			"why": str(result.error) if result != null else "no result",
 		})
 		return
 
 	_commands_published = rows.size()
-	DotLog.debug(CHANNEL, "published the command list", {"count": rows.size()})
+	GSLog.debug(CHANNEL, "published the command list", {"count": rows.size()})
 
 
 # --- Game -> site ----------------------------------------------------------
 
 func _on_message_accepted(
-	message: DotChatMessage, _recipients: PackedInt32Array
+	message: GSChatMessage, _recipients: PackedInt32Array
 ) -> void:
 	if not config.enabled or not config.send_game_chat:
 		return
@@ -288,8 +288,8 @@ func _on_message_accepted(
 	# notices, the vote prompts and the map changes — a running commentary nobody on a
 	# web page asked for, and the relayed lines this addon itself announces are among
 	# them, which would be a loop.
-	if message.kind != DotChatMessage.Kind.SAY \
-			and message.kind != DotChatMessage.Kind.ACTION:
+	if message.kind != GSChatMessage.Kind.SAY \
+			and message.kind != GSChatMessage.Kind.ACTION:
 		return
 
 	# A whisper is addressed to one person and a team line to one team. Neither is a
@@ -337,7 +337,7 @@ func _send_batch() -> void:
 
 	for row in batch:
 		var res: Variant = await client.call("post_integration", PATH_POST, row)
-		var result := res as DotResult
+		var result := res as GSResult
 
 		if result == null or not result.ok:
 			_failures += 1
@@ -376,7 +376,7 @@ func _poll() -> void:
 		query["since"] = _cursor
 
 	var res: Variant = await client.call("get_integration", PATH_OUTBOUND, query)
-	var result := res as DotResult
+	var result := res as GSResult
 
 	if result == null or not result.ok:
 		_failures += 1
@@ -437,12 +437,12 @@ func _deliver(row: Dictionary) -> void:
 	var label := "[%s] %s" % [config.web_tag, author if author != "" else "web"]
 	_announcing = true
 	var announced := router.announce_from(
-		text, label, uid, config.channel, DotChatMessage.Kind.SAY
+		text, label, uid, config.channel, GSChatMessage.Kind.SAY
 	)
 	_announcing = false
 
 	if not announced.ok:
-		DotLog.warn(CHANNEL, "a relayed line could not be announced", {
+		GSLog.warn(CHANNEL, "a relayed line could not be announced", {
 			"why": announced.error.message,
 		})
 		return
@@ -470,7 +470,7 @@ func _handle_command(
 		return
 
 	if uid == "" and config.require_known_author:
-		DotLog.warn(CHANNEL, "a relayed command had no identifiable author", {
+		GSLog.warn(CHANNEL, "a relayed command had no identifiable author", {
 			"command": command, "author": author,
 		})
 		site_command.emit(uid, command, false)
@@ -490,7 +490,7 @@ func _handle_command(
 		# derived from a database id they cannot see -- so the first refusal is what tells
 		# them which key to add to the admin file. Without that, granting the first admin
 		# is a puzzle with no clue in it.
-		DotLog.info(CHANNEL, "a relayed command was refused", {
+		GSLog.info(CHANNEL, "a relayed command was refused", {
 			"uid": uid,
 			"command": command,
 			"flag": command_flag,
@@ -521,10 +521,10 @@ func _load_cursor() -> void:
 	if not FileAccess.file_exists(path):
 		return
 
-	var read := DotPaths.read_json(path)
+	var read := GSPaths.read_json(path)
 
 	if not read.ok:
-		DotLog.warn(CHANNEL, "the relay cursor could not be read", {
+		GSLog.warn(CHANNEL, "the relay cursor could not be read", {
 			"path": path, "why": read.error.message,
 		})
 		return
@@ -541,10 +541,10 @@ func _set_cursor(value: String) -> void:
 
 	_cursor = value
 
-	var written := DotPaths.write_json(_cursor_path(), {"cursor": _cursor})
+	var written := GSPaths.write_json(_cursor_path(), {"cursor": _cursor})
 
 	if not written.ok:
-		DotLog.warn(CHANNEL, "the relay cursor could not be written", {
+		GSLog.warn(CHANNEL, "the relay cursor could not be written", {
 			"why": written.error.message,
 		})
 		return
@@ -553,7 +553,7 @@ func _set_cursor(value: String) -> void:
 	# flushed. A relay is a server-side thing and will almost never run in a browser, but
 	# every other write path in this family calls this and the one that does not is the
 	# one that is wrong on the day somebody tries.
-	DotWeb.sync_filesystem()
+	GSWeb.sync_filesystem()
 
 
 func _default_uid_for_author(author_id: String) -> String:
@@ -566,14 +566,14 @@ func _default_uid_for_author(author_id: String) -> String:
 
 ## Whether a line typed in game actually reaches the site right now.
 ##
-## [b]Four things have to be true, and [member DotChatRelayConfig.enabled] is only one of
+## [b]Four things have to be true, and [member GSChatRelayConfig.enabled] is only one of
 ## them.[/b] A relay that is enabled with no backbone client is a relay that refused to
 ## start; one configured to receive only is a relay that carries the site's lines inward
 ## and none of the game's outward. Answering "enabled" to any of those tells a client the
 ## conversation is being carried when it is not, and the visible result is a game whose
 ## players think they are talking to a page that never hears them.
 ##
-## This is the answer [code]DotChatManager.relay_fn[/code] wants.
+## This is the answer [code]GSChatManager.relay_fn[/code] wants.
 func is_carrying() -> bool:
 	return (
 		_started

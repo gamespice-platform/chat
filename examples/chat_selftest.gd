@@ -17,7 +17,7 @@ const SECTIONS := 18
 const CHECKS := 192
 
 func _ready() -> void:
-	DotLog.set_level(DotLog.Level.ERROR)
+	GSLog.set_level(GSLog.Level.ERROR)
 	_run()
 
 
@@ -72,10 +72,10 @@ func _run() -> void:
 
 # --- The wire form ---------------------------------------------------------
 
-func _make_router(world: FakeWorld) -> DotChatRouter:
-	var router := DotChatRouter.new()
+func _make_router(world: FakeWorld) -> GSChatRouter:
+	var router := GSChatRouter.new()
 	router.register_as = &""
-	router.rules = DotChatRules.new()
+	router.rules = GSChatRules.new()
 
 	# Generous on purpose. Every section other than the rate one is asking a question
 	# about routing, and a router with the shipped limits refuses the fifth line a
@@ -101,7 +101,7 @@ func _test_router_basics() -> void:
 	var res := router.submit(1, &"all", "hello")
 	_check(res.ok, "an ordinary line is accepted")
 
-	var message: DotChatMessage = res.value
+	var message: GSChatMessage = res.value
 	_check(message.sender_name == "Ada", "the name comes from the host, not the client")
 	_check(message.sender_key == "u_1", "the durable key is stamped")
 	_check(message.seq == 1, "sequence numbers start at one")
@@ -117,7 +117,7 @@ func _test_router_basics() -> void:
 
 	var missing := router.submit(1, &"nowhere", "hello")
 	_check(
-		not missing.ok and missing.code() == DotError.CODE_STATE,
+		not missing.ok and missing.code() == GSError.CODE_STATE,
 		"an unknown channel is a state failure"
 	)
 
@@ -154,7 +154,7 @@ func _test_router_audience() -> void:
 		"a sender with no team reaches nobody but themselves"
 	)
 
-	var proximity := DotChatChannel.make(&"near", "Nearby", DotChatChannel.Scope.RADIUS)
+	var proximity := GSChatChannel.make(&"near", "Nearby", GSChatChannel.Scope.RADIUS)
 	proximity.radius = 10.0
 	router.add_channel(proximity)
 
@@ -209,14 +209,14 @@ func _test_router_audience() -> void:
 
 	_check(not router.whisper(1, 1, "hi").ok, "you cannot whisper to yourself")
 
-	var no_echo := DotChatChannel.make(&"silent", "Silent")
+	var no_echo := GSChatChannel.make(&"silent", "Silent")
 	no_echo.echo_to_sender = false
 	router.add_channel(no_echo)
 	router.submit(1, &"silent", "not to me")
 	var silent_to: Array = world.sent[-1]["to"]
 	_check(not silent_to.has(1), "a channel that does not echo does not echo")
 
-	var admin_only := DotChatChannel.make(&"admins", "Admins")
+	var admin_only := GSChatChannel.make(&"admins", "Admins")
 	admin_only.admin_only = true
 	router.add_channel(admin_only)
 	_check(
@@ -226,7 +226,7 @@ func _test_router_audience() -> void:
 	world.admins.append(1)
 	_check(router.submit(1, &"admins", "hi").ok, "an admin can")
 
-	var server_only := DotChatChannel.make(&"news", "News")
+	var server_only := GSChatChannel.make(&"news", "News")
 	server_only.server_only = true
 	router.add_channel(server_only)
 	_check(
@@ -259,7 +259,7 @@ func _test_router_groups() -> void:
 
 	# The old shape, unchanged: a plain members channel answers membership alone, which
 	# is exactly why it could not carry party chat.
-	var plain := DotChatChannel.make(&"inparty", "In a party", DotChatChannel.Scope.MEMBERS)
+	var plain := GSChatChannel.make(&"inparty", "In a party", GSChatChannel.Scope.MEMBERS)
 	router.add_channel(plain)
 	router.membership_fn = func(peer: int, _channel: StringName) -> bool:
 		return parties.has(peer)
@@ -271,7 +271,7 @@ func _test_router_groups() -> void:
 	)
 	router.membership_fn = Callable()
 
-	var party := DotChatChannel.group(&"party", "Party")
+	var party := GSChatChannel.group(&"party", "Party")
 	_check(party.validate().ok and party.grouped, "the group factory makes a valid grouped channel")
 	router.add_channel(party)
 
@@ -339,7 +339,7 @@ func _test_router_groups() -> void:
 	_check(own, "backlog hands a joiner their own party's lines")
 	_check(not leaked, "backlog never hands one party's lines to another")
 
-	var bad := DotChatChannel.make(&"teamgroup", "Nope", DotChatChannel.Scope.TEAM)
+	var bad := GSChatChannel.make(&"teamgroup", "Nope", GSChatChannel.Scope.TEAM)
 	bad.grouped = true
 	_check(not bad.validate().ok, "only a members channel can be grouped")
 
@@ -354,9 +354,9 @@ func _test_router_limits() -> void:
 	var world := FakeWorld.new()
 	world.add(1, "Ada")
 
-	var router := DotChatRouter.new()
+	var router := GSChatRouter.new()
 	router.register_as = &""
-	router.rules = DotChatRules.new()
+	router.rules = GSChatRules.new()
 	router.rules.rate_per_minute = 60
 	router.rules.burst = 3.0
 	router.rules.duplicate_window_sec = 30.0
@@ -369,7 +369,7 @@ func _test_router_limits() -> void:
 		var res := router.submit(1, &"all", "line %d" % i)
 		if res.ok:
 			accepted += 1
-		elif res.code() == DotError.CODE_RATE_LIMITED:
+		elif res.code() == GSError.CODE_RATE_LIMITED:
 			limited += 1
 
 	_check(accepted <= 4, "the burst is the ceiling on back-to-back lines")
@@ -383,7 +383,7 @@ func _test_router_limits() -> void:
 	_check(repeater.submit(1, &"all", "same").ok, "the first one is fine")
 	var again := repeater.submit(1, &"all", "same")
 	_check(
-		not again.ok and again.code() == DotError.CODE_RATE_LIMITED,
+		not again.ok and again.code() == GSError.CODE_RATE_LIMITED,
 		"the same line twice inside the window is refused"
 	)
 	_check(repeater.submit(1, &"all", "different").ok, "a different line is not")
@@ -410,14 +410,14 @@ func _test_router_gag() -> void:
 
 	var source := FakeMuteSource.new()
 	add_child(source)
-	DotRegistry.register(DotChatRouter.MUTE_SERVICE, source)
+	GSRegistry.register(GSChatRouter.MUTE_SERVICE, source)
 
 	source.gagged.append(1)
 	_check(router.is_gagged(1), "a registered mute source is consulted")
 
 	var refused := router.submit(1, &"all", "hello")
 	_check(
-		not refused.ok and refused.code() == DotError.CODE_FORBIDDEN,
+		not refused.ok and refused.code() == GSError.CODE_FORBIDDEN,
 		"a gagged player cannot speak"
 	)
 	_check(router.submit(2, &"all", "hello").ok, "everybody else still can")
@@ -425,7 +425,7 @@ func _test_router_gag() -> void:
 	var announced := router.announce("round over")
 	_check(announced.ok, "a gag does not silence the server")
 
-	var notices := DotChatChannel.make(&"notices", "Notices")
+	var notices := GSChatChannel.make(&"notices", "Notices")
 	notices.ignores_gag = true
 	router.add_channel(notices)
 	_check(
@@ -433,7 +433,7 @@ func _test_router_gag() -> void:
 		"a channel that ignores gags carries a gagged player's join notice"
 	)
 
-	DotRegistry.unregister(DotChatRouter.MUTE_SERVICE)
+	GSRegistry.unregister(GSChatRouter.MUTE_SERVICE)
 	source.queue_free()
 	router.queue_free()
 
@@ -467,8 +467,8 @@ func _test_router_commands() -> void:
 
 	var action := router.submit(1, &"all", "/me waves")
 	_check(action.ok and action.value != null, "/me is handled by the router")
-	var message: DotChatMessage = action.value
-	_check(message.kind == DotChatMessage.Kind.ACTION, "and produces an ACTION")
+	var message: GSChatMessage = action.value
+	_check(message.kind == GSChatMessage.Kind.ACTION, "and produces an ACTION")
 	_check(message.text == "waves", "with the prefix removed")
 
 	_check(router.is_command("!rtv"), "is_command answers before submitting")
@@ -518,10 +518,10 @@ func _test_client() -> void:
 	world.add(1, "Ada")
 	var router := _make_router(world)
 
-	var client := DotChatClient.new()
+	var client := GSChatClient.new()
 	client.register_as = &""
-	client.rules = DotChatRules.new()
-	client.channels = [DotChatChannel.everyone(), DotChatChannel.team()]
+	client.rules = GSChatRules.new()
+	client.channels = [GSChatChannel.everyone(), GSChatChannel.team()]
 	client.active_channel = &"all"
 	add_child(client)
 
@@ -553,9 +553,9 @@ func _test_client() -> void:
 	router.submit(1, &"all", "from the server")
 	var wire: Dictionary = world.sent[-1]["wire"]
 
-	var received: Array[DotChatMessage] = []
+	var received: Array[GSChatMessage] = []
 	client.message_received.connect(
-		func(message: DotChatMessage, _channel: StringName) -> void:
+		func(message: GSChatMessage, _channel: StringName) -> void:
 			received.append(message)
 	)
 
@@ -612,11 +612,11 @@ func _test_self_mute() -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
-	var list := DotChatSelfMute.new()
+	var list := GSChatSelfMute.new()
 	list.path = path
 	list.refresh_sec = 0.0
-	DotRegistry.register(DotChatSelfMute.SERVICE, list)
-	_check(DotChatSelfMute.shared() == list, "the registered list is the one everybody shares")
+	GSRegistry.register(GSChatSelfMute.SERVICE, list)
+	_check(GSChatSelfMute.shared() == list, "the registered list is the one everybody shares")
 
 	list.set_roster([
 		{"id": 3, "name": "Ada", "key": "k-ada", "peer": 301},
@@ -641,12 +641,12 @@ func _test_self_mute() -> void:
 		and not list.is_muted("Adam", "4"), "a whole name, any case, mutes that one player")
 	_check(voice.muted.has(301) and voice.muted.size() == 1, "and their voice is dropped on the manager")
 
-	var client := DotChatClient.new()
+	var client := GSChatClient.new()
 	client.register_as = &""
-	client.channels = [DotChatChannel.everyone()]
+	client.channels = [GSChatChannel.everyone()]
 	add_child(client)
 	var drawn: Array[String] = []
-	client.message_received.connect(func(m: DotChatMessage, _c: StringName) -> void:
+	client.message_received.connect(func(m: GSChatMessage, _c: StringName) -> void:
 		drawn.append(m.sender_name))
 
 	var _a := client.receive(_said(3, "Ada", "you cannot see this", 1))
@@ -658,7 +658,7 @@ func _test_self_mute() -> void:
 	_check(drawn.size() == 3 and drawn[-1] == "Adam", "and a backlog drops them too")
 
 	# A game change, or the shell switching packs: a new list from the same file.
-	var again := DotChatSelfMute.new()
+	var again := GSChatSelfMute.new()
 	again.path = path
 	again.refresh_sec = 0.0
 	again.load_list()
@@ -710,22 +710,22 @@ func _test_self_mute() -> void:
 	list.set_muted({"key": "k-ada", "name": "Ada"}, true)
 	list.watch()
 	var published := FakeVoice.new()
-	DotRegistry.register(DotChatSelfMute.VOICE_SERVICE, published)
+	GSRegistry.register(GSChatSelfMute.VOICE_SERVICE, published)
 	_check(published.muted.has(301), "a voice manager published as dot_voice_client is bound as it appears")
-	DotRegistry.unregister_instance(DotChatSelfMute.VOICE_SERVICE, published)
+	GSRegistry.unregister_instance(GSChatSelfMute.VOICE_SERVICE, published)
 
 	client.queue_free()
-	DotRegistry.unregister_instance(DotChatSelfMute.SERVICE, list)
+	GSRegistry.unregister_instance(GSChatSelfMute.SERVICE, list)
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func _test_format() -> void:
 	_section("formatting")
 
-	var chan := DotChatChannel.team()
-	var message := DotChatMessage.say(&"team", "u_1", "Ada", "push [lb]B[rb]")
+	var chan := GSChatChannel.team()
+	var message := GSChatMessage.say(&"team", "u_1", "Ada", "push [lb]B[rb]")
 
-	var line := DotChatFormat.line(message, chan)
+	var line := GSChatFormat.line(message, chan)
 	_check(line.contains("(TEAM)"), "the channel prefix is drawn")
 	_check(line.contains("Ada:"), "the name is drawn")
 	_check(
@@ -733,15 +733,15 @@ func _test_format() -> void:
 		"the escaped text stays escaped on the way to a RichTextLabel"
 	)
 
-	var system := DotChatFormat.line(DotChatMessage.system(&"all", "map changing"))
+	var system := GSChatFormat.line(GSChatMessage.system(&"all", "map changing"))
 	_check(not system.contains("Ada"), "a system line is not attributed to anybody")
 
-	var action := DotChatMessage.make(
-		DotChatMessage.Kind.ACTION, &"all", "u_1", "Ada", "waves"
+	var action := GSChatMessage.make(
+		GSChatMessage.Kind.ACTION, &"all", "u_1", "Ada", "waves"
 	)
-	_check(DotChatFormat.line(action).contains("* Ada waves"), "an action reads as one")
+	_check(GSChatFormat.line(action).contains("* Ada waves"), "an action reads as one")
 
 	_check(
-		DotChatFormat.plain(message).contains("push [B]"),
+		GSChatFormat.plain(message).contains("push [B]"),
 		"the plain form puts the brackets back for a destination with no parser"
 	)

@@ -1,10 +1,10 @@
 @tool
-class_name DotChatRules
-extends DotConfig
+class_name GSChatRules
+extends GSConfig
 
 ## Every policy chat has, in one layered configuration.
 ##
-## Layered like every [DotConfig] in this family — exported defaults, then a JSON
+## Layered like every [GSConfig] in this family — exported defaults, then a JSON
 ## file, then the environment, then the command line — so an operator can raise the
 ## rate limit on a busy lobby without an export, and a test can set one field and
 ## leave the rest alone.
@@ -131,30 +131,30 @@ func cli_prefix() -> String:
 	return "--chat_"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if max_length < 1:
-		return DotResult.fail(DotError.CODE_INVALID, "max_length must be at least 1.")
+		return GSResult.fail(GSError.CODE_INVALID, "max_length must be at least 1.")
 
 	if rate_per_minute < 1:
-		return DotResult.fail(DotError.CODE_INVALID, "rate_per_minute must be at least 1.")
+		return GSResult.fail(GSError.CODE_INVALID, "rate_per_minute must be at least 1.")
 
 	if burst < 1.0:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"burst below one message means nothing can ever be sent."
 		)
 
 	for prefix in command_prefixes:
 		if str(prefix) == "":
-			return DotResult.fail(
-				DotError.CODE_INVALID,
+			return GSResult.fail(
+				GSError.CODE_INVALID,
 				"An empty command prefix makes every message a command."
 			)
 
-	return DotResult.success(self)
+	return GSResult.success(self)
 
 
-## Messages per second, which is what [DotRateLimiter] takes.
+## Messages per second, which is what [GSRateLimiter] takes.
 func rate_per_second() -> float:
 	return float(rate_per_minute) / 60.0
 

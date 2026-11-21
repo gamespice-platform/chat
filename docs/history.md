@@ -16,7 +16,7 @@ The first pass inserts a `]` inside `[lb]`, which the second pass then rewrites,
 
 Every field on the wire had a default (`n`, `t`, `c`, `k`, `m` all fell back), so a `Dictionary` that was not this wire form parsed into a *valid* message whose text, sender and channel were all empty.
 
-GameSpice Server's own chat manager sends a payload of its own shape: `{kind, userid, name, text, admin}`. A client handed one called `DotChatClient.receive`, got `ok`, filed a message with no text, and drew it. Two games put every line a player typed on screen as `": "`, and the code doing it was *correct*: it was being handed a message that had parsed. Both had a fallback for exactly that payload and **neither fallback was reachable**, because `receive` never failed.
+GameSpice Server's own chat manager sends a payload of its own shape: `{kind, userid, name, text, admin}`. A client handed one called `GSChatClient.receive`, got `ok`, filed a message with no text, and drew it. Two games put every line a player typed on screen as `": "`, and the code doing it was *correct*: it was being handed a message that had parsed. Both had a fallback for exactly that payload and **neither fallback was reachable**, because `receive` never failed.
 
 **A parser with a default for every field cannot refuse anything**, so "it parsed" stops meaning "it was ours". The fix is the `m` discriminator ([design](design.md#the-wire-form-must-refuse-what-is-not-its-own)).
 

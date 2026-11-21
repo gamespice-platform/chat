@@ -28,20 +28,20 @@ func _relay_world() -> Array:
 	world.add(1, "Ada")
 	world.add(2, "Bo")
 
-	var router := DotChatRouter.new()
-	router.rules = DotChatRules.new()
+	var router := GSChatRouter.new()
+	router.rules = GSChatRules.new()
 	world.wire_up(router)
 	add_child(router)
 
 	var backbone := FakeBackbone.new()
-	var cfg := DotChatRelayConfig.new()
+	var cfg := GSChatRelayConfig.new()
 	cfg.enabled = true
 	cfg.cursor_path = RELAY_CURSOR
 	# The relay loads its cursor in `_ready`, so a stale file made each run begin where
 	# the last stopped. See docs/testing.md.
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(RELAY_CURSOR))
 
-	var relay := DotChatRelay.new()
+	var relay := GSChatRelay.new()
 	relay.router = router
 	relay.config = cfg
 	relay.client = backbone
@@ -55,10 +55,10 @@ func _test_relay_out() -> void:
 
 	var bits := _relay_world()
 	var world: FakeWorld = bits[0]
-	var router: DotChatRouter = bits[1]
+	var router: GSChatRouter = bits[1]
 	var backbone: FakeBackbone = bits[2]
-	var cfg: DotChatRelayConfig = bits[3]
-	var relay: DotChatRelay = bits[4]
+	var cfg: GSChatRelayConfig = bits[3]
+	var relay: GSChatRelay = bits[4]
 
 	# No poll timer for this half — receive_site_chat off keeps the test to one direction.
 	cfg.receive_site_chat = false
@@ -119,7 +119,7 @@ func _test_relay_out() -> void:
 
 
 func _test_relay_commands(
-	relay: DotChatRelay, router: DotChatRouter, backbone: FakeBackbone
+	relay: GSChatRelay, router: GSChatRouter, backbone: FakeBackbone
 ) -> void:
 	# What this server ACCEPTS, published for the site composer. `commands_fn` is re-read
 	# on every publish, since the table varies by game and installed modules.
@@ -172,10 +172,10 @@ func _test_relay_in() -> void:
 
 	var bits := _relay_world()
 	var world: FakeWorld = bits[0]
-	var router: DotChatRouter = bits[1]
+	var router: GSChatRouter = bits[1]
 	var backbone: FakeBackbone = bits[2]
-	var cfg: DotChatRelayConfig = bits[3]
-	var relay: DotChatRelay = bits[4]
+	var cfg: GSChatRelayConfig = bits[3]
+	var relay: GSChatRelay = bits[4]
 
 	cfg.send_game_chat = false
 	cfg.allow_commands = true
@@ -205,7 +205,7 @@ func _test_relay_in() -> void:
 
 	var heard: Array[Dictionary] = []
 	router.message_accepted.connect(
-		func(m: DotChatMessage, _r: PackedInt32Array) -> void:
+		func(m: GSChatMessage, _r: PackedInt32Array) -> void:
 			heard.append({"name": m.sender_name, "text": m.text, "key": m.sender_key})
 	)
 
@@ -230,8 +230,8 @@ func _test_relay_in() -> void:
 
 
 func _test_relay_in_commands(
-	relay: DotChatRelay, router: DotChatRouter, backbone: FakeBackbone,
-	cfg: DotChatRelayConfig, ran: Array[Dictionary], asked: Array[Dictionary],
+	relay: GSChatRelay, router: GSChatRouter, backbone: FakeBackbone,
+	cfg: GSChatRelayConfig, ran: Array[Dictionary], asked: Array[Dictionary],
 	heard: Array[Dictionary]
 ) -> void:
 	# A command from somebody without the flag.

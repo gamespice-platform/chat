@@ -1,5 +1,5 @@
-class_name DotChatRouter
-extends DotChatRouterAudience
+class_name GSChatRouter
+extends GSChatRouterAudience
 
 ## The server half of chat: what is accepted, who receives it, and what is kept.
 ##
@@ -15,7 +15,7 @@ extends DotChatRouterAudience
 ## [member send_fn] draws straight into the window.
 ##
 ## [codeblock]
-## var router := DotChatRouter.new()
+## var router := GSChatRouter.new()
 ## router.send_fn = func(wire: Dictionary, to: PackedInt32Array) -> void:
 ##     for peer in to:
 ##         net.send_to(peer, wire)
@@ -31,7 +31,7 @@ extends DotChatRouterAudience
 ##
 ## [b]Gags are asked for, not stored.[/b] The router looks up whatever is registered
 ## as [code]dot_mute_source[/code] and calls [code]is_chat_muted(peer)[/code] on it —
-## which is exactly the method [DotModerationManager] publishes and which, until this
+## which is exactly the method [GSModerationManager] publishes and which, until this
 ## addon existed, nothing in the family called. Neither addon names the other and a
 ## project with only one of them works.
 
@@ -46,9 +46,9 @@ const SERVICE := &"dot_chat_router"
 const MUTE_SERVICE := &"dot_mute_source"
 
 ## A message was accepted and handed to [member send_fn].
-signal message_accepted(message: DotChatMessage, recipients: PackedInt32Array)
+signal message_accepted(message: GSChatMessage, recipients: PackedInt32Array)
 
-## A message was refused. [param code] is a [DotError] code, never a sentence to
+## A message was refused. [param code] is a [GSError] code, never a sentence to
 ## branch on.
 signal message_refused(peer: int, code: String, reason: String)
 
@@ -61,19 +61,19 @@ signal command_entered(peer: int, command: String, args: PackedStringArray, raw:
 
 @export_group("Configuration")
 
-@export var rules: DotChatRules = null
+@export var rules: GSChatRules = null
 
-## A JSON file layered over the exported defaults, as every [DotConfig] here is.
+## A JSON file layered over the exported defaults, as every [GSConfig] here is.
 @export_file("*.json") var rules_file: String = ""
 
 ## Install [code]all[/code], [code]team[/code] and [code]whisper[/code] on ready.
 ##
 ## Off for a game that declares its own set. A router with no channels accepts
 ## nothing, which is a configuration error rather than a silent one — [method submit]
-## refuses with [constant DotError.CODE_STATE] and says so.
+## refuses with [constant GSError.CODE_STATE] and says so.
 @export var install_default_channels: bool = true
 
-## Turn [code]/me something[/code] into a [constant DotChatMessage.Kind.ACTION].
+## Turn [code]/me something[/code] into a [constant GSChatMessage.Kind.ACTION].
 ##
 ## On, because it is a command in name only: no host handles it, every game wants it,
 ## and a router that emitted it as a command would leave every game writing the same
@@ -90,11 +90,11 @@ signal command_entered(peer: int, command: String, args: PackedStringArray, raw:
 @export var mute_service: StringName = MUTE_SERVICE
 
 ## Recent lines, per channel and in total.
-var history: DotChatHistory = null
+var history: GSChatHistory = null
 
 var _channels: Dictionary = {}
 var _order: Array[StringName] = []
-var _limiter: DotRateLimiter = null
+var _limiter: GSRateLimiter = null
 var _seq: int = 0
 var _silenced_until: Dictionary = {}
 var _recent_by_sender: Dictionary = {}
@@ -109,21 +109,21 @@ func _ready() -> void:
 
 ## Prepares the router. Idempotent, and called by [method _ready].
 ##
-## Explicit because a router created through a [DotNodeRef] has already run
+## Explicit because a router created through a [GSNodeRef] has already run
 ## [method _ready] by the time its host assigns [member rules] — the same ordering
 ## that left GameSpice Server's audit log unopened in every default configuration, warning
 ## about it on every boot in a way that read like a setting nobody had filled in.
-func start() -> DotResult:
+func start() -> GSResult:
 	if _started:
-		return DotResult.success(self)
+		return GSResult.success(self)
 
 	if rules == null:
-		rules = DotChatRules.new()
+		rules = GSChatRules.new()
 
 	if rules_file != "":
 		var loaded := rules.apply_json_file(rules_file)
 		if not loaded.ok:
-			DotLog.warn(CHANNEL, "chat rules file was not applied", {
+			GSLog.warn(CHANNEL, "chat rules file was not applied", {
 				"path": rules_file, "error": str(loaded.error)
 			})
 
@@ -131,40 +131,40 @@ func start() -> DotResult:
 	if not valid.ok:
 		return valid.wrap("The chat rules are not usable.")
 
-	history = DotChatHistory.new(rules.history_limit)
-	_limiter = DotRateLimiter.new(rules.rate_per_second(), rules.burst)
+	history = GSChatHistory.new(rules.history_limit)
+	_limiter = GSRateLimiter.new(rules.rate_per_second(), rules.burst)
 
 	if install_default_channels and _channels.is_empty():
-		add_channel(DotChatChannel.everyone())
-		add_channel(DotChatChannel.team())
-		add_channel(DotChatChannel.direct())
+		add_channel(GSChatChannel.everyone())
+		add_channel(GSChatChannel.team())
+		add_channel(GSChatChannel.direct())
 
 	if register_as != &"":
-		DotRegistry.register(register_as, self)
+		GSRegistry.register(register_as, self)
 
 	_started = true
-	DotLog.info(CHANNEL, "chat router ready", {
+	GSLog.info(CHANNEL, "chat router ready", {
 		"channels": _order.size(),
 		"rate_per_minute": rules.rate_per_minute,
 		"max_length": rules.max_length,
 	})
 
-	return DotResult.success(self)
+	return GSResult.success(self)
 
 
 # --- Channels --------------------------------------------------------------
 
-func add_channel(channel: DotChatChannel) -> DotResult:
+func add_channel(channel: GSChatChannel) -> GSResult:
 	if channel == null:
-		return DotResult.fail(DotError.CODE_INVALID, "No channel.")
+		return GSResult.fail(GSError.CODE_INVALID, "No channel.")
 
 	var valid := channel.validate()
 	if not valid.ok:
 		return valid
 
 	if _channels.has(channel.id):
-		return DotResult.fail(
-			DotError.CODE_INVALID, "That channel already exists.", String(channel.id)
+		return GSResult.fail(
+			GSError.CODE_INVALID, "That channel already exists.", String(channel.id)
 		)
 
 	_channels[channel.id] = channel
@@ -173,7 +173,7 @@ func add_channel(channel: DotChatChannel) -> DotResult:
 	if history != null:
 		history.set_limit(channel.id, channel.history_limit)
 
-	return DotResult.success(channel)
+	return GSResult.success(channel)
 
 
 func remove_channel(id: StringName) -> void:
@@ -185,7 +185,7 @@ func remove_channel(id: StringName) -> void:
 		history.clear_channel(id)
 
 
-func channel(id: StringName) -> DotChatChannel:
+func channel(id: StringName) -> GSChatChannel:
 	if _channels.has(id):
 		return _channels[id]
 	return null
@@ -215,7 +215,7 @@ func is_command(text: String) -> bool:
 
 ## The whole path for a line a player typed.
 ##
-## On success the value is the [DotChatMessage] that was sent — [b]or [code]null[/code]
+## On success the value is the [GSChatMessage] that was sent — [b]or [code]null[/code]
 ## when the line was a command[/b], in which case [signal command_entered] has been
 ## emitted and nothing was broadcast. Ask [method is_command] first if the difference
 ## matters to the caller.
@@ -231,8 +231,8 @@ func submit(
 	peer: int,
 	channel_id: StringName,
 	text: String,
-	kind: DotChatMessage.Kind = DotChatMessage.Kind.SAY
-) -> DotResult:
+	kind: GSChatMessage.Kind = GSChatMessage.Kind.SAY
+) -> GSResult:
 	if not _started:
 		var started := start()
 		if not started.ok:
@@ -244,17 +244,17 @@ func submit(
 
 	var chan := channel(target)
 	if chan == null:
-		return _refuse(peer, DotError.CODE_STATE, "No such chat channel.", String(target))
+		return _refuse(peer, GSError.CODE_STATE, "No such chat channel.", String(target))
 
 	if chan.server_only:
 		return _refuse(
-			peer, DotError.CODE_FORBIDDEN, "That channel is not open to players.",
+			peer, GSError.CODE_FORBIDDEN, "That channel is not open to players.",
 			String(target)
 		)
 
 	var raw := text.strip_edges()
 	if raw == "":
-		return _refuse(peer, DotError.CODE_INVALID, "The message is empty.")
+		return _refuse(peer, GSError.CODE_INVALID, "The message is empty.")
 
 	var prefix := rules.command_prefix_of(raw)
 	if prefix != "":
@@ -264,8 +264,8 @@ func submit(
 
 
 ## The [code]/me[/code] form, as a first-class call rather than a command.
-func submit_action(peer: int, channel_id: StringName, text: String) -> DotResult:
-	return submit(peer, channel_id, text, DotChatMessage.Kind.ACTION)
+func submit_action(peer: int, channel_id: StringName, text: String) -> GSResult:
+	return submit(peer, channel_id, text, GSChatMessage.Kind.ACTION)
 
 
 ## A private line from one player to another.
@@ -275,19 +275,19 @@ func submit_action(peer: int, channel_id: StringName, text: String) -> DotResult
 ## that fails.
 func whisper(
 	peer: int, target_peer: int, text: String, channel_id: StringName = &"whisper"
-) -> DotResult:
+) -> GSResult:
 	var chan := channel(channel_id)
-	if chan == null or chan.scope != DotChatChannel.Scope.DIRECT:
+	if chan == null or chan.scope != GSChatChannel.Scope.DIRECT:
 		return _refuse(
-			peer, DotError.CODE_STATE, "This server has no whisper channel.",
+			peer, GSError.CODE_STATE, "This server has no whisper channel.",
 			String(channel_id)
 		)
 
 	if target_peer == peer:
-		return _refuse(peer, DotError.CODE_INVALID, "You cannot whisper to yourself.")
+		return _refuse(peer, GSError.CODE_INVALID, "You cannot whisper to yourself.")
 
 	var res := _deliver_player_line(
-		peer, chan, text.strip_edges(), DotChatMessage.Kind.WHISPER, target_peer
+		peer, chan, text.strip_edges(), GSChatMessage.Kind.WHISPER, target_peer
 	)
 	return res
 
@@ -300,8 +300,8 @@ func whisper(
 func announce(
 	text: String,
 	channel_id: StringName = &"",
-	kind: DotChatMessage.Kind = DotChatMessage.Kind.SYSTEM
-) -> DotResult:
+	kind: GSChatMessage.Kind = GSChatMessage.Kind.SYSTEM
+) -> GSResult:
 	if not _started:
 		var started := start()
 		if not started.ok:
@@ -313,22 +313,22 @@ func announce(
 
 	var chan := channel(target)
 	if chan == null:
-		return DotResult.fail(
-			DotError.CODE_STATE, "No such chat channel.", String(target)
+		return GSResult.fail(
+			GSError.CODE_STATE, "No such chat channel.", String(target)
 		)
 
 	var cleaned := text.strip_edges()
 	if rules.escape_markup:
-		cleaned = DotChatFilter.escape_bbcode(
-			DotChatFilter.strip_invisible_chars(
-				DotChatFilter.strip_controls(cleaned, rules.allow_newlines)
+		cleaned = GSChatFilter.escape_bbcode(
+			GSChatFilter.strip_invisible_chars(
+				GSChatFilter.strip_controls(cleaned, rules.allow_newlines)
 			)
 		)
 
 	if cleaned == "":
-		return DotResult.fail(DotError.CODE_INVALID, "The announcement is empty.")
+		return GSResult.fail(GSError.CODE_INVALID, "The announcement is empty.")
 
-	var message := DotChatMessage.make(kind, target, "", "", cleaned)
+	var message := GSChatMessage.make(kind, target, "", "", cleaned)
 	return _dispatch(message, chan, _recipients_for(message, chan))
 
 
@@ -349,8 +349,8 @@ func announce_from(
 	sender_name: String,
 	sender_key: String = "",
 	channel_id: StringName = &"",
-	kind: DotChatMessage.Kind = DotChatMessage.Kind.SAY
-) -> DotResult:
+	kind: GSChatMessage.Kind = GSChatMessage.Kind.SAY
+) -> GSResult:
 	if not _started:
 		var started := start()
 		if not started.ok:
@@ -362,8 +362,8 @@ func announce_from(
 
 	var chan := channel(target)
 	if chan == null:
-		return DotResult.fail(
-			DotError.CODE_STATE, "No such chat channel.", String(target)
+		return GSResult.fail(
+			GSError.CODE_STATE, "No such chat channel.", String(target)
 		)
 
 	# Sanitised exactly as an announcement is, and for a stronger reason: this text was
@@ -373,24 +373,24 @@ func announce_from(
 	var name_cleaned := sender_name.strip_edges()
 
 	if rules.escape_markup:
-		cleaned = DotChatFilter.escape_bbcode(
-			DotChatFilter.strip_invisible_chars(
-				DotChatFilter.strip_controls(cleaned, rules.allow_newlines)
+		cleaned = GSChatFilter.escape_bbcode(
+			GSChatFilter.strip_invisible_chars(
+				GSChatFilter.strip_controls(cleaned, rules.allow_newlines)
 			)
 		)
-		name_cleaned = DotChatFilter.escape_bbcode(
-			DotChatFilter.strip_invisible_chars(
-				DotChatFilter.strip_controls(name_cleaned, false)
+		name_cleaned = GSChatFilter.escape_bbcode(
+			GSChatFilter.strip_invisible_chars(
+				GSChatFilter.strip_controls(name_cleaned, false)
 			)
 		)
 
 	if cleaned == "":
-		return DotResult.fail(DotError.CODE_INVALID, "The announcement is empty.")
+		return GSResult.fail(GSError.CODE_INVALID, "The announcement is empty.")
 
 	if cleaned.length() > rules.max_length:
 		cleaned = cleaned.substr(0, rules.max_length)
 
-	var message := DotChatMessage.make(
+	var message := GSChatMessage.make(
 		kind, target, sender_key, name_cleaned, cleaned
 	)
 	return _dispatch(message, chan, _recipients_for(message, chan))
@@ -401,12 +401,12 @@ func announce_from(
 ## [b]Deliberately not kept in history.[/b] History is what a moderator reads back
 ## and what a joining player is handed; a private notice in it would be shown to
 ## everybody who asked for either.
-func notice(peer: int, text: String, channel_id: StringName = &"") -> DotResult:
+func notice(peer: int, text: String, channel_id: StringName = &"") -> GSResult:
 	var target := channel_id
 	if target == &"":
 		target = default_channel()
 
-	var message := DotChatMessage.system(target, text.strip_edges())
+	var message := GSChatMessage.system(target, text.strip_edges())
 	message.seq = _next_seq()
 
 	var to := PackedInt32Array()
@@ -416,17 +416,17 @@ func notice(peer: int, text: String, channel_id: StringName = &"") -> DotResult:
 
 
 ## The join notice. A game that does not want one simply never calls it.
-func join_notice(peer: int, channel_id: StringName = &"") -> DotResult:
-	return _presence(peer, DotChatMessage.Kind.JOIN, channel_id)
+func join_notice(peer: int, channel_id: StringName = &"") -> GSResult:
+	return _presence(peer, GSChatMessage.Kind.JOIN, channel_id)
 
 
-func leave_notice(peer: int, channel_id: StringName = &"") -> DotResult:
-	return _presence(peer, DotChatMessage.Kind.LEAVE, channel_id)
+func leave_notice(peer: int, channel_id: StringName = &"") -> GSResult:
+	return _presence(peer, GSChatMessage.Kind.LEAVE, channel_id)
 
 
 ## The lines to hand somebody who has just connected, as wire dictionaries.
 ##
-## Per channel, capped by [member DotChatChannel.backlog], and only for channels the
+## Per channel, capped by [member GSChatChannel.backlog], and only for channels the
 ## peer can currently receive on — the same audience test a live message goes
 ## through, so a player joining a team is not handed the other team's last twenty
 ## lines.
@@ -434,7 +434,7 @@ func backlog_for(peer: int) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
 
 	for id in _order:
-		var chan: DotChatChannel = _channels[id]
+		var chan: GSChatChannel = _channels[id]
 		if chan.backlog <= 0:
 			continue
 
@@ -453,50 +453,50 @@ func backlog_for(peer: int) -> Array[Dictionary]:
 
 func _deliver_player_line(
 	peer: int,
-	chan: DotChatChannel,
+	chan: GSChatChannel,
 	raw: String,
-	kind: DotChatMessage.Kind,
+	kind: GSChatMessage.Kind,
 	target_peer: int = 0
-) -> DotResult:
+) -> GSResult:
 	if chan.admin_only and not _is_admin(peer):
 		return _refuse(
-			peer, DotError.CODE_FORBIDDEN, "That channel is for administrators."
+			peer, GSError.CODE_FORBIDDEN, "That channel is for administrators."
 		)
 
 	if not chan.ignores_gag and is_gagged(peer):
-		return _refuse(peer, DotError.CODE_FORBIDDEN, "You are gagged.")
+		return _refuse(peer, GSError.CODE_FORBIDDEN, "You are gagged.")
 
 	var now := Time.get_ticks_msec()
 	if _silenced_until.has(peer) and now < int(_silenced_until[peer]):
 		var left := float(int(_silenced_until[peer]) - now) / 1000.0
 		return _refuse(
-			peer, DotError.CODE_RATE_LIMITED,
+			peer, GSError.CODE_RATE_LIMITED,
 			"You are being quiet for another %.0f seconds." % ceilf(left)
 		)
 
 	if not _limiter.allow(peer, chan.rate_cost):
 		if rules.flood_penalty_sec > 0.0:
 			_silenced_until[peer] = now + int(rules.flood_penalty_sec * 1000.0)
-		return _refuse(peer, DotError.CODE_RATE_LIMITED, "You are talking too fast.")
+		return _refuse(peer, GSError.CODE_RATE_LIMITED, "You are talking too fast.")
 
-	var cleaned := DotChatFilter.sanitise(raw, rules)
+	var cleaned := GSChatFilter.sanitise(raw, rules)
 	if not cleaned.ok:
 		return _refuse(peer, cleaned.code(), cleaned.error.message)
 
 	var text: String = cleaned.value
 
 	if _is_duplicate(peer, text, now):
-		return _refuse(peer, DotError.CODE_RATE_LIMITED, "You just said that.")
+		return _refuse(peer, GSError.CODE_RATE_LIMITED, "You just said that.")
 
 	_remember(peer, text, now)
 
-	var message := DotChatMessage.new()
+	var message := GSChatMessage.new()
 	message.kind = kind
 	message.channel = chan.id
 	message.text = text
 	message.sender_peer = peer
 	message.sender_key = _key_of(peer)
-	message.sender_name = DotChatFilter.clean_name(_name_of(peer))
+	message.sender_name = GSChatFilter.clean_name(_name_of(peer))
 	message.target_peer = target_peer
 
 	if target_peer != 0:
@@ -507,10 +507,10 @@ func _deliver_player_line(
 
 func _handle_command(
 	peer: int, channel_id: StringName, raw: String, prefix: String
-) -> DotResult:
+) -> GSResult:
 	var body := raw.substr(prefix.length()).strip_edges()
 	if body == "":
-		return _refuse(peer, DotError.CODE_INVALID, "That is not a command.")
+		return _refuse(peer, GSError.CODE_INVALID, "That is not a command.")
 
 	var parts := body.split(" ", false)
 	var command := str(parts[0]).to_lower()
@@ -521,7 +521,7 @@ func _handle_command(
 
 	if handle_me_command and command == "me":
 		if args.is_empty():
-			return _refuse(peer, DotError.CODE_INVALID, "Say what you are doing.")
+			return _refuse(peer, GSError.CODE_INVALID, "Say what you are doing.")
 		return submit_action(peer, channel_id, " ".join(args))
 
 	_command_claimed = false
@@ -535,16 +535,16 @@ func _handle_command(
 	if not _command_claimed and rules.broadcast_unknown_commands:
 		var chan := channel(channel_id)
 		if chan != null:
-			return _deliver_player_line(peer, chan, raw, DotChatMessage.Kind.SAY)
+			return _deliver_player_line(peer, chan, raw, GSChatMessage.Kind.SAY)
 
 	# Success with no message. A command was consumed and nothing was broadcast; the
 	# host decides whether it meant anything.
-	return DotResult.success(null)
+	return GSResult.success(null)
 
 
 ## Called from a [signal command_entered] handler that dealt with the command.
 ##
-## Only [member DotChatRules.broadcast_unknown_commands] reads it, and only for the
+## Only [member GSChatRules.broadcast_unknown_commands] reads it, and only for the
 ## line being handled right now.
 func claim_command() -> void:
 	_command_claimed = true
@@ -556,18 +556,18 @@ func command_was_claimed() -> bool:
 
 
 func _presence(
-	peer: int, kind: DotChatMessage.Kind, channel_id: StringName
-) -> DotResult:
+	peer: int, kind: GSChatMessage.Kind, channel_id: StringName
+) -> GSResult:
 	var target := channel_id
 	if target == &"":
 		target = default_channel()
 
 	var chan := channel(target)
 	if chan == null:
-		return DotResult.fail(DotError.CODE_STATE, "No such chat channel.")
+		return GSResult.fail(GSError.CODE_STATE, "No such chat channel.")
 
-	var message := DotChatMessage.make(
-		kind, target, _key_of(peer), DotChatFilter.clean_name(_name_of(peer)), ""
+	var message := GSChatMessage.make(
+		kind, target, _key_of(peer), GSChatFilter.clean_name(_name_of(peer)), ""
 	)
 	message.sender_peer = peer
 
@@ -575,8 +575,8 @@ func _presence(
 
 
 func _dispatch(
-	message: DotChatMessage, chan: DotChatChannel, recipients: PackedInt32Array
-) -> DotResult:
+	message: GSChatMessage, chan: GSChatChannel, recipients: PackedInt32Array
+) -> GSResult:
 	message.seq = _next_seq()
 	if message.sent_at == 0:
 		message.sent_at = int(Time.get_unix_time_from_system())
@@ -588,13 +588,13 @@ func _dispatch(
 
 
 func _send(
-	message: DotChatMessage, recipients: PackedInt32Array, announce_it: bool
-) -> DotResult:
+	message: GSChatMessage, recipients: PackedInt32Array, announce_it: bool
+) -> GSResult:
 	if not send_fn.is_valid():
 		# Not fatal, and warned every time rather than once: a router with no
 		# transport is a router nobody hears, and the family has shipped several
 		# values produced correctly and consumed by nothing.
-		DotLog.warn(CHANNEL, "a chat message was accepted with no send_fn to carry it", {
+		GSLog.warn(CHANNEL, "a chat message was accepted with no send_fn to carry it", {
 			"channel": String(message.channel), "seq": message.seq
 		})
 	else:
@@ -603,24 +603,24 @@ func _send(
 	if announce_it:
 		message_accepted.emit(message, recipients)
 
-	return DotResult.success(message)
+	return GSResult.success(message)
 
 
 ## DEBUG, as GameSpice Inventory does: on an authoritative server a refusal is the rules being
 ## enforced -- a flood, a duplicate, a filtered line -- and WARN would fill the log with
 ## the sound of the system working. The sender is told; this is for "why did my message
 ## not go through", asked after the fact.
-func _refuse(peer: int, code: String, reason: String, detail: String = "") -> DotResult:
-	DotLog.debug(CHANNEL, "chat refused", {"peer": peer, "code": code, "reason": reason})
+func _refuse(peer: int, code: String, reason: String, detail: String = "") -> GSResult:
+	GSLog.debug(CHANNEL, "chat refused", {"peer": peer, "code": code, "reason": reason})
 	message_refused.emit(peer, code, reason)
-	return DotResult.failure(DotError.make(code, reason, detail))
+	return GSResult.failure(GSError.make(code, reason, detail))
 
 
 # --- Audience --------------------------------------------------------------
 
 ## Who receives [param message]. Exposed because a host writing its own delivery
 ## still wants the router's answer.
-func recipients_for(message: DotChatMessage) -> PackedInt32Array:
+func recipients_for(message: GSChatMessage) -> PackedInt32Array:
 	var chan := channel(message.channel)
 	if chan == null:
 		return PackedInt32Array()
@@ -635,7 +635,7 @@ func recipients_for(message: DotChatMessage) -> PackedInt32Array:
 ## normally — and falls back to [member gag_fn]. A project with neither has nobody
 ## gagged, which is the correct answer rather than an error.
 func is_gagged(peer: int) -> bool:
-	var source := DotRegistry.get_service(mute_service)
+	var source := GSRegistry.get_service(mute_service)
 
 	if source != null:
 		if source.has_method("is_chat_muted"):
@@ -643,7 +643,7 @@ func is_gagged(peer: int) -> bool:
 
 		if not _warned_about_mute_source:
 			_warned_about_mute_source = true
-			DotLog.warn(
+			GSLog.warn(
 				CHANNEL,
 				"something is registered as a mute source but cannot answer is_chat_muted",
 				{"service": String(mute_service), "class": source.get_class()}
@@ -707,7 +707,7 @@ func _next_seq() -> int:
 
 func _exit_tree() -> void:
 	if register_as != &"":
-		DotRegistry.unregister_instance(register_as, self)
+		GSRegistry.unregister_instance(register_as, self)
 
 
 func describe() -> Dictionary:
@@ -716,7 +716,7 @@ func describe() -> Dictionary:
 		"messages": _seq,
 		"history": history.size() if history != null else 0,
 		"rate_per_minute": rules.rate_per_minute if rules != null else 0,
-		"gag_source": String(mute_service) if DotRegistry.has(mute_service) else "",
+		"gag_source": String(mute_service) if GSRegistry.has(mute_service) else "",
 	}
 
 
@@ -725,14 +725,14 @@ func describe_lines() -> PackedStringArray:
 	out.append("chat router: %d channels, %d messages sent" % [_order.size(), _seq])
 
 	for id in _order:
-		var chan: DotChatChannel = _channels[id]
+		var chan: GSChatChannel = _channels[id]
 		out.append("  " + chan.describe())
 
 	if history != null:
 		out.append_array(history.describe_lines())
 
 	out.append("  gag source: %s" % (
-		"registered" if DotRegistry.has(mute_service) else
+		"registered" if GSRegistry.has(mute_service) else
 		("gag_fn" if gag_fn.is_valid() else "none")
 	))
 

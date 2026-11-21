@@ -1,4 +1,4 @@
-class_name DotChatFilter
+class_name GSChatFilter
 extends RefCounted
 
 ## Turns what a player typed into something safe to put in front of everybody else.
@@ -20,13 +20,13 @@ extends RefCounted
 ## censoring            what the community asked for, past the obvious evasions
 ## [/codeblock]
 ##
-## Every one returns a [DotResult]: a message that is empty once cleaned is refused,
+## Every one returns a [GSResult]: a message that is empty once cleaned is refused,
 ## not sent as a blank line.
 
-# No log channel: static passes over a string, returning a DotResult. The refusal is the
-# sender's to see, and DotChatRouter -- which knows who sent it -- is what logs.
+# No log channel: static passes over a string, returning a GSResult. The refusal is the
+# sender's to see, and GSChatRouter -- which knows who sent it -- is what logs.
 
-## Code points removed outright when [member DotChatRules.strip_invisible] is on.
+## Code points removed outright when [member GSChatRules.strip_invisible] is on.
 ##
 ## Zero-width and formatting characters, the bidirectional overrides, and the byte
 ## order mark. Emoji joiners are here too, which is a deliberate trade: it breaks a
@@ -54,9 +54,9 @@ const LEET: Dictionary = {
 ## Cleans [param text] under [param rules].
 ##
 ## Returns the cleaned string, or a failure whose code is
-## [constant DotError.CODE_INVALID] for something structurally wrong (empty, too
+## [constant GSError.CODE_INVALID] for something structurally wrong (empty, too
 ## long). The caller decides whether to tell the sender why.
-static func sanitise(text: String, rules: DotChatRules) -> DotResult:
+static func sanitise(text: String, rules: GSChatRules) -> GSResult:
 	var out := text
 
 	out = strip_controls(out, rules.allow_newlines)
@@ -70,7 +70,7 @@ static func sanitise(text: String, rules: DotChatRules) -> DotResult:
 	out = out.strip_edges()
 
 	if out == "":
-		return DotResult.fail(DotError.CODE_INVALID, "The message is empty.")
+		return GSResult.fail(GSError.CODE_INVALID, "The message is empty.")
 
 	# Length is measured before markup escaping, not after. Escaping makes a string
 	# longer, so measuring afterwards would refuse a message that a player typed
@@ -78,8 +78,8 @@ static func sanitise(text: String, rules: DotChatRules) -> DotResult:
 	# is the one they can count.
 	if out.length() > rules.max_length:
 		if rules.refuse_over_length:
-			return DotResult.fail(
-				DotError.CODE_INVALID,
+			return GSResult.fail(
+				GSError.CODE_INVALID,
 				"The message is too long (%d of %d characters)." % [
 					out.length(), rules.max_length
 				]
@@ -93,9 +93,9 @@ static func sanitise(text: String, rules: DotChatRules) -> DotResult:
 		out = censor(out, rules)
 
 	if out.strip_edges() == "":
-		return DotResult.fail(DotError.CODE_INVALID, "The message is empty.")
+		return GSResult.fail(GSError.CODE_INVALID, "The message is empty.")
 
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
 ## Removes C0 and C1 control characters. Newlines survive only if allowed.
@@ -187,7 +187,7 @@ static func escape_bbcode(text: String) -> String:
 ## letters collapsed, punctuation dropped — while the replacement is applied to the
 ## original. That is what makes the list catch a spelling it does not contain without
 ## rewriting everything else a player typed.
-static func censor(text: String, rules: DotChatRules) -> String:
+static func censor(text: String, rules: GSChatRules) -> String:
 	if rules.censor_words.is_empty():
 		return text
 

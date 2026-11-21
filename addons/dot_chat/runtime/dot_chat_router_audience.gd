@@ -1,6 +1,6 @@
-class_name DotChatRouterAudience
+class_name GSChatRouterAudience
 extends Node
-## Host seams and audience rules of [DotChatRouter]; split out so the router stays under the size budget.
+## Host seams and audience rules of [GSChatRouter]; split out so the router stays under the size budget.
 
 ## [code]func(wire: Dictionary, recipients: PackedInt32Array) -> void[/code].
 ## Required. Nothing reaches a player without it.
@@ -15,10 +15,10 @@ var name_fn: Callable = Callable()
 ## [code]func(peer: int) -> String[/code]. The durable pseudonymous key.
 var key_fn: Callable = Callable()
 
-## [code]func(peer: int) -> StringName[/code]. For [constant DotChatChannel.Scope.TEAM].
+## [code]func(peer: int) -> StringName[/code]. For [constant GSChatChannel.Scope.TEAM].
 var team_fn: Callable = Callable()
 
-## [code]func(peer: int) -> Vector3[/code]. For [constant DotChatChannel.Scope.RADIUS].
+## [code]func(peer: int) -> Vector3[/code]. For [constant GSChatChannel.Scope.RADIUS].
 ## A 2D game returns [code]Vector3(x, y, 0)[/code]; a mixed 2D/3D distance is wrong.
 var position_fn: Callable = Callable()
 
@@ -28,15 +28,15 @@ var position_fn: Callable = Callable()
 var can_hear_fn: Callable = Callable()
 
 ## [code]func(peer: int, channel: StringName) -> bool[/code]. For
-## [constant DotChatChannel.Scope.MEMBERS].
+## [constant GSChatChannel.Scope.MEMBERS].
 var membership_fn: Callable = Callable()
 
 ## [code]func(peer: int, channel: StringName) -> StringName[/code]: a peer's group on a
-## [member DotChatChannel.grouped] channel (party, squad) or [code]&""[/code] for none.
+## [member GSChatChannel.grouped] channel (party, squad) or [code]&""[/code] for none.
 ## Separate from [member membership_fn]; a server line reaches every peer that has one.
 var group_fn: Callable = Callable()
 
-## [code]func(peer: int) -> bool[/code]. Gates [member DotChatChannel.admin_only].
+## [code]func(peer: int) -> bool[/code]. Gates [member GSChatChannel.admin_only].
 var is_admin_fn: Callable = Callable()
 
 ## [code]func(peer: int) -> bool[/code]. Consulted only when no gag source is
@@ -88,11 +88,11 @@ func _is_admin(peer: int) -> bool:
 
 
 func _recipients_for(
-	message: DotChatMessage, chan: DotChatChannel
+	message: GSChatMessage, chan: GSChatChannel
 ) -> PackedInt32Array:
 	var out := PackedInt32Array()
 
-	if chan.scope == DotChatChannel.Scope.DIRECT:
+	if chan.scope == GSChatChannel.Scope.DIRECT:
 		if message.target_peer != 0:
 			out.append(message.target_peer)
 		if chan.echo_to_sender and message.sender_peer != 0:
@@ -108,15 +108,15 @@ func _recipients_for(
 
 
 ## Whether one peer is in the audience for one message.
-func _receives(peer: int, message: DotChatMessage, chan: DotChatChannel) -> bool:
+func _receives(peer: int, message: GSChatMessage, chan: GSChatChannel) -> bool:
 	if peer == message.sender_peer and message.sender_peer != 0:
 		return chan.echo_to_sender
 
 	match chan.scope:
-		DotChatChannel.Scope.EVERYONE:
+		GSChatChannel.Scope.EVERYONE:
 			return true
 
-		DotChatChannel.Scope.TEAM:
+		GSChatChannel.Scope.TEAM:
 			if message.is_from_server():
 				return true
 			var sender_team := _team_of(message.sender_peer)
@@ -126,7 +126,7 @@ func _receives(peer: int, message: DotChatMessage, chan: DotChatChannel) -> bool
 				return false
 			return _team_of(peer) == sender_team
 
-		DotChatChannel.Scope.RADIUS:
+		GSChatChannel.Scope.RADIUS:
 			if message.is_from_server():
 				return true
 			if not position_fn.is_valid():
@@ -139,14 +139,14 @@ func _receives(peer: int, message: DotChatMessage, chan: DotChatChannel) -> bool
 				return bool(can_hear_fn.call(peer, message.sender_peer, here, there))
 			return true
 
-		DotChatChannel.Scope.MEMBERS:
+		GSChatChannel.Scope.MEMBERS:
 			if chan.grouped:
 				return _same_group(peer, message, chan)
 			if not membership_fn.is_valid():
 				return false
 			return bool(membership_fn.call(peer, chan.id))
 
-		DotChatChannel.Scope.DIRECT:
+		GSChatChannel.Scope.DIRECT:
 			return peer == message.target_peer
 
 	return false
@@ -155,7 +155,7 @@ func _receives(peer: int, message: DotChatMessage, chan: DotChatChannel) -> bool
 ## Whether [param peer] is in the sender's group on a grouped channel.
 ## Fails closed: no [member group_fn], or a sender or receiver with no group, is false,
 ## so no ambiguity lets one party read another's line.
-func _same_group(peer: int, message: DotChatMessage, chan: DotChatChannel) -> bool:
+func _same_group(peer: int, message: GSChatMessage, chan: GSChatChannel) -> bool:
 	if not group_fn.is_valid():
 		return false
 

@@ -13,7 +13,7 @@ class FakeMuteSource extends Node:
 
 
 ## A backbone that records what it was sent and answers what it was told to.
-## Duck-typed: a script naming `DotBackboneClient` fails to compile without GameSpice Auth.
+## Duck-typed: a script naming `GSBackboneClient` fails to compile without GameSpice Auth.
 class FakeBackbone extends RefCounted:
 	var posted: Array[Dictionary] = []
 	var outbound: Array[Dictionary] = []
@@ -21,17 +21,17 @@ class FakeBackbone extends RefCounted:
 	var queries: Array[Dictionary] = []
 	var fail_post: bool = false
 
-	func post_integration(path: String, body: Dictionary) -> DotResult:
+	func post_integration(path: String, body: Dictionary) -> GSResult:
 		if fail_post:
-			return DotResult.fail(DotError.CODE_NETWORK, "nope")
+			return GSResult.fail(GSError.CODE_NETWORK, "nope")
 		posted.append({"path": path, "body": body})
-		return DotResult.success({"ok": true, "id": str(posted.size())})
+		return GSResult.success({"ok": true, "id": str(posted.size())})
 
-	func get_integration(path: String, query: Dictionary = {}) -> DotResult:
+	func get_integration(path: String, query: Dictionary = {}) -> GSResult:
 		queries.append({"path": path, "query": query.duplicate(true)})
 		var rows := outbound.duplicate(true)
 		outbound.clear()
-		return DotResult.success({
+		return GSResult.success({
 			"ok": true, "messages": rows, "newest": newest,
 		})
 
@@ -60,7 +60,7 @@ class FakeWorld extends RefCounted:
 			out.append(int(id))
 		return out
 
-	func wire_up(router: DotChatRouter) -> void:
+	func wire_up(router: GSChatRouter) -> void:
 		router.peers_fn = peers
 		router.name_fn = func(peer: int) -> String: return str(names.get(peer, ""))
 		router.key_fn = func(peer: int) -> String: return str(keys.get(peer, ""))

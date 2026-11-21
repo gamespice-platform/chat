@@ -1,4 +1,4 @@
-class_name DotChatMessage
+class_name GSChatMessage
 extends RefCounted
 
 ## One line of chat, from the moment a player pressed enter to the moment it is drawn.
@@ -16,9 +16,9 @@ extends RefCounted
 ## a hundred of these a second.
 ##
 ## [codeblock]
-## var message := DotChatMessage.say(&"all", "u_91af", "Ada", "hello")
+## var message := GSChatMessage.say(&"all", "u_91af", "Ada", "hello")
 ## var wire := message.to_dictionary()
-## var back := DotChatMessage.from_dictionary(wire)
+## var back := GSChatMessage.from_dictionary(wire)
 ## [/codeblock]
 
 ## What kind of line this is.
@@ -61,7 +61,7 @@ var seq: int = 0
 ## player controls decides where their line sorts in everybody else's window.
 var sent_at: int = 0
 
-## Which channel this belongs to. Resolved against a [DotChatChannel].
+## Which channel this belongs to. Resolved against a [GSChatChannel].
 var channel: StringName = &""
 
 var kind: Kind = Kind.SAY
@@ -81,7 +81,7 @@ var sender_peer: int = 0
 ## must not retroactively rename what they already said.
 var sender_name: String = ""
 
-## The player-visible text, already sanitised. See [DotChatFilter].
+## The player-visible text, already sanitised. See [GSChatFilter].
 var text: String = ""
 
 ## For a whisper: the durable key of the recipient.
@@ -93,7 +93,7 @@ var target_peer: int = 0
 ## Free-form extras a game attaches — a team id, a colour, a rank badge.
 ##
 ## Copied in and out. A [Dictionary] is a reference in GDScript, and handing out the
-## live one is how [DotLeaderboardDef] ended up with every scoped board and its own
+## live one is how [GSLeaderboardDef] ended up with every scoped board and its own
 ## template being one object.
 var meta: Dictionary = {}
 
@@ -104,8 +104,8 @@ static func make(
 	p_sender_key: String,
 	p_sender_name: String,
 	p_text: String
-) -> DotChatMessage:
-	var out := DotChatMessage.new()
+) -> GSChatMessage:
+	var out := GSChatMessage.new()
 	out.kind = p_kind
 	out.channel = p_channel
 	out.sender_key = p_sender_key
@@ -117,12 +117,12 @@ static func make(
 
 static func say(
 	p_channel: StringName, p_sender_key: String, p_sender_name: String, p_text: String
-) -> DotChatMessage:
+) -> GSChatMessage:
 	return make(Kind.SAY, p_channel, p_sender_key, p_sender_name, p_text)
 
 
 ## A line the server said. No sender, and no gag or rate limit applies to it.
-static func system(p_channel: StringName, p_text: String) -> DotChatMessage:
+static func system(p_channel: StringName, p_text: String) -> GSChatMessage:
 	return make(Kind.SYSTEM, p_channel, "", "", p_text)
 
 
@@ -170,7 +170,7 @@ func to_dictionary() -> Dictionary:
 	return out
 
 
-static func from_dictionary(data: Dictionary) -> DotResult:
+static func from_dictionary(data: Dictionary) -> GSResult:
 	# [b]A dictionary that is not this wire form must be REFUSED, not read as an empty
 	# message.[/b] Every key here has a default, so without this check any dictionary at
 	# all parses: GameSpice Server's chat manager sends `{kind, userid, name, text, admin}` and
@@ -181,21 +181,21 @@ static func from_dictionary(data: Dictionary) -> DotResult:
 	# `m` is the discriminator because [method to_dictionary] always writes it, empty text
 	# included, and nothing else that reaches a chat client has it.
 	if not data.has("m"):
-		return DotResult.fail(
-			DotError.CODE_PARSE,
+		return GSResult.fail(
+			GSError.CODE_PARSE,
 			"Not a chat message: no text field.",
 			"keys: %s" % ", ".join(PackedStringArray(data.keys()))
 		)
 
 	var kind_value := kind_from_name(str(data.get("k", "say")))
 	if kind_value < 0:
-		return DotResult.fail(
-			DotError.CODE_PARSE,
+		return GSResult.fail(
+			GSError.CODE_PARSE,
 			"Unknown chat message kind.",
 			str(data.get("k", ""))
 		)
 
-	var out := DotChatMessage.new()
+	var out := GSChatMessage.new()
 	out.seq = int(data.get("n", 0))
 	out.sent_at = int(data.get("t", 0))
 	out.channel = StringName(str(data.get("c", "")))
@@ -209,11 +209,11 @@ static func from_dictionary(data: Dictionary) -> DotResult:
 	if typeof(extras) == TYPE_DICTIONARY:
 		out.meta = (extras as Dictionary).duplicate(true)
 
-	return DotResult.success(out)
+	return GSResult.success(out)
 
 
-func duplicate_message() -> DotChatMessage:
-	var out := DotChatMessage.new()
+func duplicate_message() -> GSChatMessage:
+	var out := GSChatMessage.new()
 	out.seq = seq
 	out.sent_at = sent_at
 	out.channel = channel

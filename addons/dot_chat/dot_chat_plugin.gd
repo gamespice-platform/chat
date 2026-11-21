@@ -9,8 +9,8 @@ extends EditorPlugin
 const _ICON := "res://addons/dot_chat/icon_placeholder.svg"
 
 const _TYPES := [
-	["DotChatRouter", "Node", "res://addons/dot_chat/runtime/dot_chat_router.gd"],
-	["DotChatClient", "Node", "res://addons/dot_chat/runtime/dot_chat_client.gd"],
+	["GSChatRouter", "Node", "res://addons/dot_chat/runtime/dot_chat_router.gd"],
+	["GSChatClient", "Node", "res://addons/dot_chat/runtime/dot_chat_client.gd"],
 ]
 
 

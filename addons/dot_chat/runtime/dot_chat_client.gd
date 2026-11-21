@@ -1,4 +1,4 @@
-class_name DotChatClient
+class_name GSChatClient
 extends Node
 
 ## The receiving half: scrollback, unread counts, and the local echo problem.
@@ -9,7 +9,7 @@ extends Node
 ## refused for flooding, gagging or length — and the player, having seen it, repeats
 ## it.
 ##
-## So this does neither. It runs the [i]same[/i] [DotChatFilter] pass the server will
+## So this does neither. It runs the [i]same[/i] [GSChatFilter] pass the server will
 ## run, refuses locally what the server would refuse, and tells the player why before
 ## anything is sent. What it will not do is draw the line: acceptance is the server's
 ## to grant, and the round trip that grants it is one frame on a loopback and eighty
@@ -17,7 +17,7 @@ extends Node
 ## about.
 ##
 ## [codeblock]
-## var chat := DotChatClient.new()
+## var chat := GSChatClient.new()
 ## chat.send_fn = func(text: String, channel: StringName) -> void:
 ##     link.rpc_say(String(channel), text)
 ## chat.message_received.connect(_on_line)
@@ -33,7 +33,7 @@ const CHANNEL := "chat"
 const SERVICE := &"dot_chat_client"
 
 ## A message arrived and has been filed.
-signal message_received(message: DotChatMessage, channel_id: StringName)
+signal message_received(message: GSChatMessage, channel_id: StringName)
 
 ## The sequence numbers skipped. A client that has missed lines is a client whose
 ## scrollback has a hole in it, and it is better to say so than to draw a continuous
@@ -50,10 +50,10 @@ signal unread_changed(channel_id: StringName, unread: int)
 ## [b]A copy, and not authoritative.[/b] If it disagrees with the server's the server
 ## wins, and the only symptom is a message the client thought was fine being refused
 ## — which is the right way round for the disagreement to fail.
-@export var rules: DotChatRules = null
+@export var rules: GSChatRules = null
 
 ## Channels the client knows about, for prefixes and colours.
-@export var channels: Array[DotChatChannel] = []
+@export var channels: Array[GSChatChannel] = []
 
 @export_range(0, 4096, 1) var history_limit: int = 300
 
@@ -64,14 +64,14 @@ signal unread_changed(channel_id: StringName, unread: int)
 var send_fn: Callable = Callable()
 
 ## Whether this client drops the lines of players on the player's own block list
-## ([DotChatSelfMute], the `sm` command). On: the list is the player's, and a game that
+## ([GSChatSelfMute], the `sm` command). On: the list is the player's, and a game that
 ## files chat here is the game that should honour it.
 @export var use_self_mute: bool = true
 
-## The block list asked, or null for the shared one ([method DotChatSelfMute.shared]).
+## The block list asked, or null for the shared one ([method GSChatSelfMute.shared]).
 var self_mute: Object = null
 
-var history: DotChatHistory = null
+var history: GSChatHistory = null
 
 ## The channel the input box is currently addressing.
 var active_channel: StringName = &"all"
@@ -86,32 +86,32 @@ func _ready() -> void:
 	start()
 
 
-func start() -> DotResult:
+func start() -> GSResult:
 	if _started:
-		return DotResult.success(self)
+		return GSResult.success(self)
 
 	if rules == null:
-		rules = DotChatRules.new()
+		rules = GSChatRules.new()
 
-	history = DotChatHistory.new(history_limit)
+	history = GSChatHistory.new(history_limit)
 
 	for chan in channels:
 		if chan != null:
 			add_channel(chan)
 
 	if register_as != &"":
-		DotRegistry.register(register_as, self)
+		GSRegistry.register(register_as, self)
 
 	# Now rather than at the first line: the shared list is what asks the server who is
 	# here, and a list loaded only when somebody spoke would not know whose voice to drop.
 	if use_self_mute and self_mute == null:
-		self_mute = DotChatSelfMute.shared()
+		self_mute = GSChatSelfMute.shared()
 
 	_started = true
-	return DotResult.success(self)
+	return GSResult.success(self)
 
 
-func add_channel(chan: DotChatChannel) -> void:
+func add_channel(chan: GSChatChannel) -> void:
 	if chan == null:
 		return
 	_by_id[chan.id] = chan
@@ -119,7 +119,7 @@ func add_channel(chan: DotChatChannel) -> void:
 		history.set_limit(chan.id, maxi(1, chan.history_limit))
 
 
-func channel(id: StringName) -> DotChatChannel:
+func channel(id: StringName) -> GSChatChannel:
 	if _by_id.has(id):
 		return _by_id[id]
 	return null
@@ -132,58 +132,58 @@ func channel(id: StringName) -> DotChatChannel:
 ## Returns the text that was sent, or the failure the server would have returned.
 ## A command is passed through untouched — the server owns the command table, and a
 ## client that pre-checked one would refuse the commands it had not been told about.
-func compose(channel_id: StringName, text: String) -> DotResult:
+func compose(channel_id: StringName, text: String) -> GSResult:
 	if not _started:
 		start()
 
 	var raw := text.strip_edges()
 	if raw == "":
-		return DotResult.fail(DotError.CODE_INVALID, "The message is empty.")
+		return GSResult.fail(GSError.CODE_INVALID, "The message is empty.")
 
 	if rules.command_prefix_of(raw) == "":
-		var cleaned := DotChatFilter.sanitise(raw, rules)
+		var cleaned := GSChatFilter.sanitise(raw, rules)
 		if not cleaned.ok:
 			return cleaned
 
 	if not send_fn.is_valid():
-		return DotResult.fail(
-			DotError.CODE_STATE, "This chat client has nowhere to send to."
+		return GSResult.fail(
+			GSError.CODE_STATE, "This chat client has nowhere to send to."
 		)
 
 	send_fn.call(raw, channel_id)
-	return DotResult.success(raw)
+	return GSResult.success(raw)
 
 
 # --- Receiving -------------------------------------------------------------
 
 ## Files one wire dictionary from the server.
-func receive(wire: Dictionary) -> DotResult:
+func receive(wire: Dictionary) -> GSResult:
 	if not _started:
 		start()
 
-	var parsed := DotChatMessage.from_dictionary(wire)
+	var parsed := GSChatMessage.from_dictionary(wire)
 	if not parsed.ok:
 		# WARN: this came from the server, which is the authority on the format, so a
 		# line it sent that this client cannot read is two builds disagreeing -- and the
 		# player simply never sees it.
-		DotLog.warn(CHANNEL, "a chat line from the server could not be read", {
+		GSLog.warn(CHANNEL, "a chat line from the server could not be read", {
 			"why": parsed.error.message if parsed.error != null else "",
 		})
 		return parsed
 
-	var message: DotChatMessage = parsed.value
+	var message: GSChatMessage = parsed.value
 
 	# Sequence numbers are per router and monotonic. A repeat is dropped rather than
 	# drawn twice — a reconnect that replays a backlog would otherwise duplicate every
 	# line the client already had.
 	if message.seq > 0 and message.seq <= _last_seq:
-		return DotResult.success(message)
+		return GSResult.success(message)
 
 	if _last_seq > 0 and message.seq > _last_seq + 1:
 		# DEBUG, not WARN: the sequence is per router, so a line on a channel this client
 		# does not receive (another team's) is a gap too. Worth having when somebody says
 		# they missed a message; not worth an operator's attention on its own.
-		DotLog.debug(CHANNEL, "chat sequence gap", {
+		GSLog.debug(CHANNEL, "chat sequence gap", {
 			"from": _last_seq + 1, "to": message.seq,
 		})
 		gap_detected.emit(_last_seq + 1, message.seq)
@@ -194,7 +194,7 @@ func receive(wire: Dictionary) -> DotResult:
 	# After the sequence bookkeeping, so a dropped line is not reported as a gap; before
 	# the history, so it is neither drawn, counted unread, nor there when scrolled back to.
 	if _self_muted(message):
-		return DotResult.success(message)
+		return GSResult.success(message)
 
 	history.append(message)
 
@@ -204,16 +204,16 @@ func receive(wire: Dictionary) -> DotResult:
 		unread_changed.emit(message.channel, count)
 
 	message_received.emit(message, message.channel)
-	return DotResult.success(message)
+	return GSResult.success(message)
 
 
-## Whether the player muted whoever said [param message] ([DotChatSelfMute]). Only what a
+## Whether the player muted whoever said [param message] ([GSChatSelfMute]). Only what a
 ## player says: a join or leave notice names them and is the server's line, and stays.
-func _self_muted(message: DotChatMessage) -> bool:
+func _self_muted(message: GSChatMessage) -> bool:
 	if not use_self_mute or message.is_from_server() or message.sender_name == "":
 		return false
 	if self_mute == null:
-		self_mute = DotRegistry.get_service(DotChatSelfMute.SERVICE)
+		self_mute = GSRegistry.get_service(GSChatSelfMute.SERVICE)
 	return self_mute != null and self_mute.has_method(&"is_muted") \
 		and bool(self_mute.call(&"is_muted", message.sender_name, message.sender_key))
 
@@ -231,11 +231,11 @@ func receive_backlog(lines: Array) -> int:
 		if typeof(entry) != TYPE_DICTIONARY:
 			unreadable += 1
 			continue
-		var parsed := DotChatMessage.from_dictionary(entry as Dictionary)
+		var parsed := GSChatMessage.from_dictionary(entry as Dictionary)
 		if not parsed.ok:
 			unreadable += 1
 			continue
-		var message: DotChatMessage = parsed.value
+		var message: GSChatMessage = parsed.value
 		_last_seq = maxi(_last_seq, message.seq)
 		if _self_muted(message):
 			continue
@@ -246,7 +246,7 @@ func receive_backlog(lines: Array) -> int:
 	# One line for the whole backlog rather than one per entry, for the reason receive()
 	# gives: the server sent it, so unreadable lines are a format disagreement.
 	if unreadable > 0:
-		DotLog.warn(CHANNEL, "some backlog chat lines could not be read", {
+		GSLog.warn(CHANNEL, "some backlog chat lines could not be read", {
 			"unreadable": unreadable, "filed": filed,
 		})
 
@@ -263,7 +263,7 @@ func lines(
 	var chan := channel(channel_id)
 
 	for message in history.recent(channel_id, count):
-		out.append(DotChatFormat.line(message, chan, options))
+		out.append(GSChatFormat.line(message, chan, options))
 
 	return out
 
@@ -274,7 +274,7 @@ func all_lines(count: int = 50, options: Dictionary = {}) -> PackedStringArray:
 	var out := PackedStringArray()
 
 	for message in history.recent_all(count):
-		out.append(DotChatFormat.line(message, channel(message.channel), options))
+		out.append(GSChatFormat.line(message, channel(message.channel), options))
 
 	return out
 
@@ -313,7 +313,7 @@ func clear() -> void:
 
 func _exit_tree() -> void:
 	if register_as != &"":
-		DotRegistry.unregister_instance(register_as, self)
+		GSRegistry.unregister_instance(register_as, self)
 
 
 func describe_lines() -> PackedStringArray:

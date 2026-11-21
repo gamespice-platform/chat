@@ -23,7 +23,7 @@ The server decides who hears a line, what it may contain, and what name is drawn
 On the server:
 
 ```gdscript
-var router := DotChatRouter.new()
+var router := GSChatRouter.new()
 
 router.peers_fn = func() -> PackedInt32Array: return server.peer_ids()
 router.name_fn  = func(peer: int) -> String: return server.session_of(peer).name
@@ -44,12 +44,12 @@ if not res.ok:
 On the client:
 
 ```gdscript
-var chat := DotChatClient.new()
-chat.channels = [DotChatChannel.everyone(), DotChatChannel.team()]
+var chat := GSChatClient.new()
+chat.channels = [GSChatChannel.everyone(), GSChatChannel.team()]
 chat.send_fn = func(text: String, channel: StringName) -> void:
     link.rpc_id(1, "chat_say", String(channel), text)
-chat.message_received.connect(func(m: DotChatMessage, _c: StringName) -> void:
-    log_label.append_text(DotChatFormat.line(m, chat.channel(m.channel)) + "\n"))
+chat.message_received.connect(func(m: GSChatMessage, _c: StringName) -> void:
+    log_label.append_text(GSChatFormat.line(m, chat.channel(m.channel)) + "\n"))
 add_child(chat)
 
 # From your input box:
@@ -73,7 +73,7 @@ A channel is a `Resource` with an audience rule.
 | `MEMBERS` | A group the host answers for, through `membership_fn` (a clan, the dead, admins). |
 
 ```gdscript
-var proximity := DotChatChannel.make(&"near", "Nearby", DotChatChannel.Scope.RADIUS)
+var proximity := GSChatChannel.make(&"near", "Nearby", GSChatChannel.Scope.RADIUS)
 proximity.radius = 20.0
 router.add_channel(proximity)
 ```
@@ -83,7 +83,7 @@ Membership is asked, never stored. Which team a peer is on is a fact your game o
 For party chat, mark the channel `grouped` and give the router a `group_fn`. A line then reaches only the sender's party. `membership_fn` cannot do this on its own, because it is not told who is speaking.
 
 ```gdscript
-router.add_channel(DotChatChannel.group(&"party", "Party"))
+router.add_channel(GSChatChannel.group(&"party", "Party"))
 router.group_fn = func(peer: int, _channel: StringName) -> StringName:
     return StringName(parties.party_of(uid_of(peer)))   # "" for nobody's party
 ```
@@ -92,7 +92,7 @@ Someone in no party reaches only themselves. A grouped channel with no `group_fn
 
 ## Rules and limits
 
-These are defaults. Each is a property you can change on `DotChatRules` or `DotChatChannel`.
+These are defaults. Each is a property you can change on `GSChatRules` or `GSChatChannel`.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -119,11 +119,11 @@ This is how [GameSpice Server](https://github.com/gamespice-platform/server)'s c
 
 ## Drawing it
 
-GameSpice Chat ships no art. [GameSpice UI](https://github.com/gamespice-platform/ui)'s `DotChatWindow` is a ready window (a log, a line to type in, and a key that opens it). Point its `submitted` at `DotChatClient.compose` and feed what arrives back through `add_message`.
+GameSpice Chat ships no art. [GameSpice UI](https://github.com/gamespice-platform/ui)'s `GSChatWindow` is a ready window (a log, a line to type in, and a key that opens it). Point its `submitted` at `GSChatClient.compose` and feed what arrives back through `add_message`.
 
 ## Is the line reaching the site?
 
-`DotChatRelay.is_carrying()` tells you whether a line typed in game reaches the site right now. It is true only when the relay is started, enabled, sending game chat and holding a credential. dot-server hands that answer to each joining player, so a client can decide whether to draw its own chat box or leave it to the embedding page. See [docs/relay.md](docs/relay.md).
+`GSChatRelay.is_carrying()` tells you whether a line typed in game reaches the site right now. It is true only when the relay is started, enabled, sending game chat and holding a credential. dot-server hands that answer to each joining player, so a client can decide whether to draw its own chat box or leave it to the embedding page. See [docs/relay.md](docs/relay.md).
 
 More: [docs/design.md](docs/design.md), [docs/history.md](docs/history.md).
 

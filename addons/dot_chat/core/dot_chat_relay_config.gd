@@ -1,10 +1,10 @@
 @tool
-class_name DotChatRelayConfig
-extends DotConfig
+class_name GSChatRelayConfig
+extends GSConfig
 
 ## Everything the website relay needs, in one layered configuration.
 ##
-## Layered like every [DotConfig] here — exported defaults, then a JSON file, then the
+## Layered like every [GSConfig] here — exported defaults, then a JSON file, then the
 ## environment, then the command line — so an operator can turn the relay on for one
 ## server without an export.
 ##
@@ -104,7 +104,7 @@ extends DotConfig
 ## keyed by depends on which provider authenticated them. The website relay's authors are
 ## site members, so the default is the backbone's namespace; a deployment whose admin
 ## file is keyed by its own provider sets this, or replaces
-## [member DotChatRelay.uid_for_author] outright when the mapping is not a prefix.
+## [member GSChatRelay.uid_for_author] outright when the mapping is not a prefix.
 @export var author_uid_prefix: String = "backbone:"
 
 ## Whether this server tells the site which commands it accepts.
@@ -120,7 +120,7 @@ extends DotConfig
 ## deployment and a rare one.
 @export var publish_commands: bool = true
 
-## How much a relayed command is trusted, as a [code]DotCmdContext.Source[/code].
+## How much a relayed command is trusted, as a [code]GSCmdContext.Source[/code].
 ##
 ## [b]3 is CHAT, and it is the default because a relayed line is somebody typing.[/b] On a
 ## GameSpice Server that leaves `sv_chat_commands` on — the default — a CHAT-sourced line reaches
@@ -137,7 +137,7 @@ extends DotConfig
 ## That reaches everything RCON reaches, so it is a decision rather than a default — and
 ## it is still bounded by the person's own flags, never root.
 ##
-## An int rather than the enum because GameSpice Chat cannot name [DotCmdContext]: it depends
+## An int rather than the enum because GameSpice Chat cannot name [GSCmdContext]: it depends
 ## on GameSpice Core and nothing else, and the host is what owns a console.
 @export_range(0, 4, 1) var command_source: int = 3
 
@@ -171,27 +171,27 @@ func cli_prefix() -> String:
 	return "--chat_relay_"
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if poll_seconds <= 0.0:
-		return DotResult.fail(
-			DotError.CODE_INVALID, "The relay poll interval must be positive."
+		return GSResult.fail(
+			GSError.CODE_INVALID, "The relay poll interval must be positive."
 		)
 
 	if poll_limit < 1 or poll_limit > 100:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"The relay poll limit must be between 1 and 100.",
 			str(poll_limit)
 		)
 
 	if send_batch < 1:
-		return DotResult.fail(
-			DotError.CODE_INVALID, "The relay send batch must be at least one."
+		return GSResult.fail(
+			GSError.CODE_INVALID, "The relay send batch must be at least one."
 		)
 
 	if max_queued < send_batch:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"The relay queue must hold at least one batch.",
 			"%d queued against a batch of %d" % [max_queued, send_batch]
 		)
@@ -199,11 +199,11 @@ func validate() -> DotResult:
 	# Commands without an author check is the one combination that is never right, and
 	# refusing it here is cheaper than a server discovering it from an audit log.
 	if allow_commands and not require_known_author:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"Relayed commands need require_known_author: an unidentified author "
 				+ "cannot be checked against any permission."
 		)
 
-	return DotResult.success(self)
+	return GSResult.success(self)
 

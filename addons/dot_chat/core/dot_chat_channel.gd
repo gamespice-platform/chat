@@ -1,5 +1,5 @@
 @tool
-class_name DotChatChannel
+class_name GSChatChannel
 extends Resource
 
 ## One place people can talk, and the rule for who hears it.
@@ -12,7 +12,7 @@ extends Resource
 ## [b]Membership is asked, never stored here.[/b] Which team a peer is on is a fact
 ## the game owns and changes every round; a channel that kept its own roster would be
 ## a second copy of it, and the second copy is the one that goes stale. A channel
-## says [i]how[/i] to find the audience and [DotChatRouter] supplies the callables
+## says [i]how[/i] to find the audience and [GSChatRouter] supplies the callables
 ## that answer.
 
 ## How the audience for a line is worked out.
@@ -115,8 +115,8 @@ enum Scope {
 
 static func make(
 	p_id: StringName, p_display_name: String, p_scope: Scope = Scope.EVERYONE
-) -> DotChatChannel:
-	var out := DotChatChannel.new()
+) -> GSChatChannel:
+	var out := GSChatChannel.new()
 	out.id = p_id
 	out.display_name = p_display_name
 	out.scope = p_scope
@@ -126,14 +126,14 @@ static func make(
 
 
 ## The channel every game has: everybody, no permission, a bit of backlog.
-static func everyone() -> DotChatChannel:
+static func everyone() -> GSChatChannel:
 	var out := make(&"all", "All")
 	out.backlog = 20
 	return out
 
 
 ## Team chat. No backlog, for the reason on [member backlog].
-static func team() -> DotChatChannel:
+static func team() -> GSChatChannel:
 	var out := make(&"team", "Team", Scope.TEAM)
 	out.prefix = "(TEAM)"
 	out.colour = Color(0.45, 0.85, 0.55)
@@ -142,7 +142,7 @@ static func team() -> DotChatChannel:
 
 ## One conversation per group — a party, a squad — on one channel id. See [member grouped].
 ## No backlog, for the reason on [member backlog].
-static func group(p_id: StringName, p_display_name: String) -> DotChatChannel:
+static func group(p_id: StringName, p_display_name: String) -> GSChatChannel:
 	var out := make(p_id, p_display_name, Scope.MEMBERS)
 	out.grouped = true
 	out.prefix = "(%s)" % p_display_name.to_upper()
@@ -151,7 +151,7 @@ static func group(p_id: StringName, p_display_name: String) -> DotChatChannel:
 
 
 ## Whispers. One channel serves every pair; the recipient is on the message.
-static func direct() -> DotChatChannel:
+static func direct() -> GSChatChannel:
 	var out := make(&"whisper", "Whisper", Scope.DIRECT)
 	out.prefix = "(WHISPER)"
 	out.colour = Color(0.85, 0.6, 0.9)
@@ -159,9 +159,9 @@ static func direct() -> DotChatChannel:
 	return out
 
 
-func validate() -> DotResult:
+func validate() -> GSResult:
 	if String(id).strip_edges() == "":
-		return DotResult.fail(DotError.CODE_INVALID, "A channel needs an id.")
+		return GSResult.fail(GSError.CODE_INVALID, "A channel needs an id.")
 
 	# Not is_valid_identifier(): that answers "may this be a variable name", and one
 	# may not begin with a digit — which is how GameSpice Timer's records sanitiser turned
@@ -170,32 +170,32 @@ func validate() -> DotResult:
 	for i in String(id).length():
 		var c := String(id)[i]
 		if not (c >= "a" and c <= "z") and not (c >= "0" and c <= "9") and c != "_":
-			return DotResult.fail(
-				DotError.CODE_INVALID,
+			return GSResult.fail(
+				GSError.CODE_INVALID,
 				"A channel id may only contain a-z, 0-9 and underscores.",
 				String(id)
 			)
 
 	if scope == Scope.RADIUS and radius <= 0.0:
-		return DotResult.fail(
-			DotError.CODE_INVALID, "A radius channel needs a positive radius.", String(id)
+		return GSResult.fail(
+			GSError.CODE_INVALID, "A radius channel needs a positive radius.", String(id)
 		)
 
 	if grouped and scope != Scope.MEMBERS:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"Only a members channel can be grouped.",
 			"%s: scope %s" % [String(id), scope_name()]
 		)
 
 	if backlog > history_limit:
-		return DotResult.fail(
-			DotError.CODE_INVALID,
+		return GSResult.fail(
+			GSError.CODE_INVALID,
 			"A channel cannot hand out more backlog than it keeps.",
 			"%s: backlog %d, history %d" % [String(id), backlog, history_limit]
 		)
 
-	return DotResult.success(self)
+	return GSResult.success(self)
 
 
 func scope_name() -> String:
@@ -209,4 +209,4 @@ func describe() -> String:
 
 
 func _to_string() -> String:
-	return "DotChatChannel(%s)" % String(id)
+	return "GSChatChannel(%s)" % String(id)
